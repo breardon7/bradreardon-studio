@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-gold: #c8a96e;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Scrollbar — dark, minimal */
+  ::-webkit-scrollbar         { width: 4px; }
+  ::-webkit-scrollbar-track   { background: #111; }
+  ::-webkit-scrollbar-thumb   { background: #333; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+  /* Selection */
+  ::selection {
+    background: rgba(200, 169, 110, 0.25);
+    color: #f0ede8;
+  }
+}
+
+@layer components {
+  /* Reusable section label */
+  .section-label {
+    @apply text-[10px] tracking-widest uppercase text-muted flex items-center gap-3;
+  }
+  .section-label::after {
+    content: '';
+    @apply flex-1 h-px bg-edge;
+  }
+
+  /* Gold underline link */
+  .link-gold {
+    @apply text-silver hover:text-gold transition-colors duration-250;
+  }
+
+  /* Cinematic overlay on photo cards */
+  .photo-overlay {
+    @apply absolute inset-0 bg-gradient-to-t from-void/70 to-transparent
+           opacity-0 group-hover:opacity-100 transition-opacity duration-400
+           flex flex-col justify-end p-4;
+  }
+}
