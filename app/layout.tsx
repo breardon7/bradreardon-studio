@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: '%s | Brad Reardon',
     default: 'Brad Reardon — Photography',
   },
-  description: 'Photography by Brad Reardon. Architecture, street, still life, and abstract. Based in New York City. Available for commissions.',
+  description: 'Photography by Brad Reardon. Architecture, street, still life, and abstract. Based in New York City. Available to work.',
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -39,14 +39,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${baskerville.variable} ${jost.variable}`}>
-      <body className="bg-ink text-silver font-sans antialiased">
+      <body style={{ backgroundColor: '#ffffff', color: '#1a1a1a' }} className="font-sans antialiased min-h-screen flex flex-col">
         <Nav />
-        <main>{children}</main>
-        <footer className="border-t border-edge mt-24 py-8 px-6 flex justify-between items-center">
-          <span className="text-xs tracking-widest text-muted uppercase">
+        <main className="flex-1 flex flex-col">{children}</main>
+        <footer className="border-t mt-24 py-8 px-9 flex justify-between items-center" style={{ borderColor: '#e5e5e5' }}>
+          <span className="text-xs tracking-widest uppercase" style={{ color: '#999' }}>
             © {new Date().getFullYear()} Brad Reardon. All rights reserved.
           </span>
-          <span className="text-xs text-muted">
+          <span className="text-xs" style={{ color: '#999' }}>
             All images are registered works. Reproduction prohibited.
           </span>
         </footer>

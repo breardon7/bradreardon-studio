@@ -16,16 +16,16 @@ export default function Nav() {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="flex-shrink-0 border-b border-edge bg-bg2">
-      <nav className="px-9 h-[57px] flex items-baseline justify-between pt-[22px]">
+    <header className="flex-shrink-0 border-b" style={{ borderColor: '#e5e5e5', backgroundColor: '#ffffff' }}>
+      <nav className="px-9 h-[80px] flex items-baseline justify-between pt-[32px]">
 
         {/* Wordmark */}
         <Link
           href="/"
-          className="font-serif text-[13px] text-white tracking-[.01em]
-                     hover:text-text transition-colors duration-200"
+          className="font-serif text-[22px] tracking-[.01em] transition-colors duration-200"
+          style={{ color: '#1a1a1a' }}
         >
-          Brad <em>Reardon.</em>
+          BRAD REARDON
         </Link>
 
         {/* Desktop links */}
@@ -34,13 +34,11 @@ export default function Nav() {
             <li key={href}>
               <Link
                 href={href}
-                className={[
-                  'text-[9px] uppercase tracking-[.18em] pb-[3px] border-b',
-                  'transition-colors duration-200',
-                  pathname === href
-                    ? 'text-white border-white'
-                    : 'text-muted border-transparent hover:text-white hover:border-white',
-                ].join(' ')}
+                className="text-[12px] uppercase tracking-[.18em] pb-[3px] border-b transition-colors duration-200"
+                style={{
+                  color: pathname === href ? '#1a1a1a' : '#999',
+                  borderBottomColor: pathname === href ? '#1a1a1a' : 'transparent',
+                }}
               >
                 {label}
               </Link>
@@ -50,34 +48,30 @@ export default function Nav() {
 
         {/* Mobile toggle */}
         <button
-          className="md:hidden text-muted hover:text-white transition-colors p-1"
+          className="md:hidden transition-colors p-1"
+          style={{ color: '#999' }}
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
         >
           <div className="w-5 flex flex-col gap-[5px]">
-            <span className={`block h-px bg-current transition-all duration-200
-                             ${open ? 'rotate-45 translate-y-[6px]' : ''}`} />
-            <span className={`block h-px bg-current transition-all duration-200
-                             ${open ? 'opacity-0' : ''}`} />
-            <span className={`block h-px bg-current transition-all duration-200
-                             ${open ? '-rotate-45 -translate-y-[6px]' : ''}`} />
+            <span className={`block h-px bg-current transition-all duration-200 ${open ? 'rotate-45 translate-y-[6px]' : ''}`} />
+            <span className={`block h-px bg-current transition-all duration-200 ${open ? 'opacity-0' : ''}`} />
+            <span className={`block h-px bg-current transition-all duration-200 ${open ? '-rotate-45 -translate-y-[6px]' : ''}`} />
           </div>
         </button>
       </nav>
 
       {/* Mobile drawer */}
       {open && (
-        <div className="md:hidden border-t border-edge py-5 px-9">
+        <div className="md:hidden border-t py-5 px-9" style={{ borderColor: '#e5e5e5' }}>
           <ul className="flex flex-col gap-5 list-none">
             {links.map(({ href, label }) => (
               <li key={href}>
                 <Link
                   href={href}
                   onClick={() => setOpen(false)}
-                  className={[
-                    'text-[9px] uppercase tracking-[.18em]',
-                    pathname === href ? 'text-white' : 'text-muted',
-                  ].join(' ')}
+                  className="text-[12px] uppercase tracking-[.18em] transition-colors duration-200"
+                  style={{ color: pathname === href ? '#1a1a1a' : '#999' }}
                 >
                   {label}
                 </Link>

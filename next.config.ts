@@ -7,8 +7,6 @@ const nextConfig: NextConfig = {
   images: {
     // Formats served by Vercel CDN
     formats: ['image/avif', 'image/webp'],
-    // Quality default — override per-image with quality prop
-    quality: 85,
     // If exporting statically, use a loader:
     // loader: 'custom', loaderFile: './imageLoader.ts',
   },
