@@ -29,14 +29,14 @@ export default function Nav() {
         </Link>
 
         {/* Desktop links */}
-        <ul className="hidden md:flex items-baseline gap-7 list-none">
+        <ul className="hidden md:flex items-baseline gap-10 list-none">
           {links.map(({ href, label }) => (
             <li key={href}>
               <Link
                 href={href}
-                className="text-[12px] uppercase tracking-[.18em] pb-[3px] border-b transition-colors duration-200"
+                className="text-[13px] uppercase tracking-[.22em] pb-[3px] border-b transition-colors duration-200"
                 style={{
-                  color: pathname === href ? '#1a1a1a' : '#999',
+                  color: pathname === href ? '#1a1a1a' : '#666',
                   borderBottomColor: pathname === href ? '#1a1a1a' : 'transparent',
                 }}
               >
@@ -49,14 +49,14 @@ export default function Nav() {
         {/* Mobile toggle */}
         <button
           className="md:hidden transition-colors p-1"
-          style={{ color: '#999' }}
+          style={{ color: '#666' }}
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
         >
           <div className="w-5 flex flex-col gap-[5px]">
-            <span className={`block h-px bg-current transition-all duration-200 ${open ? 'rotate-45 translate-y-[6px]' : ''}`} />
-            <span className={`block h-px bg-current transition-all duration-200 ${open ? 'opacity-0' : ''}`} />
-            <span className={`block h-px bg-current transition-all duration-200 ${open ? '-rotate-45 -translate-y-[6px]' : ''}`} />
+            <span className={"block h-px bg-current transition-all duration-200 " + (open ? 'rotate-45 translate-y-[6px]' : '')} />
+            <span className={"block h-px bg-current transition-all duration-200 " + (open ? 'opacity-0' : '')} />
+            <span className={"block h-px bg-current transition-all duration-200 " + (open ? '-rotate-45 -translate-y-[6px]' : '')} />
           </div>
         </button>
       </nav>
@@ -70,8 +70,8 @@ export default function Nav() {
                 <Link
                   href={href}
                   onClick={() => setOpen(false)}
-                  className="text-[12px] uppercase tracking-[.18em] transition-colors duration-200"
-                  style={{ color: pathname === href ? '#1a1a1a' : '#999' }}
+                  className="text-[13px] uppercase tracking-[.22em] transition-colors duration-200"
+                  style={{ color: pathname === href ? '#1a1a1a' : '#666' }}
                 >
                   {label}
                 </Link>

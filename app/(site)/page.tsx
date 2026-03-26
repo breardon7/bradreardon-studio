@@ -16,38 +16,42 @@ export default function HomePage() {
   return (
     <div className="flex flex-col flex-1">
 
-
       {/* ── Series cover grid ── */}
-      <div className="grid grid-cols-2 md:grid-cols-3" style={{ gap: '2px' }}>
-        {covers.map(({ series, photo }, i) => {
-          if (!photo) return null
-          const tall = i % 3 === 1
-          return (
-            <Link
-              key={series}
-              href={`/gallery?series=${encodeURIComponent(series)}`}
-              className="group relative overflow-hidden block"
-              style={{ aspectRatio: tall ? '3/4' : '4/5', backgroundColor: '#f5f5f5' }}
-            >
-              <Image
-                src={photo.src}
-                alt={photo.alt}
-                fill
-                sizes="(max-width: 768px) 50vw, 33vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                priority={i < 3}
-              />
-              <div
-                className="absolute inset-0 flex flex-col justify-end p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.45), transparent)' }}
+      <div className="w-full flex justify-center">
+        <div
+          className="grid grid-cols-2 md:grid-cols-3"
+          style={{ gap: '2px', maxWidth: '1700px', width: '100%' }}
+        >
+          {covers.map(({ series, photo }, i) => {
+            if (!photo) return null
+            const tall = i % 3 === 1
+            return (
+              <Link
+                key={series}
+                href={`/gallery?series=${encodeURIComponent(series)}`}
+                className="group relative overflow-hidden block"
+                style={{ aspectRatio: tall ? '3/4' : '4/5', backgroundColor: '#f5f5f5' }}
               >
-                <p className="text-[10px] tracking-[.2em] uppercase text-white" style={{ fontWeight: 300 }}>
-                  {series}
-                </p>
-              </div>
-            </Link>
-          )
-        })}
+                <Image
+                  src={photo.src}
+                  alt={photo.alt}
+                  fill
+                  sizes="(max-width: 768px) 50vw, 280px"
+                  className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                  priority={i < 3}
+                />
+                <div
+                  className="absolute inset-0 flex flex-col justify-end p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.45), transparent)' }}
+                >
+                  <p className="text-[10px] tracking-[.2em] uppercase text-white" style={{ fontWeight: 300 }}>
+                    {series}
+                  </p>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
       </div>
 
       {/* ── View all link ── */}
