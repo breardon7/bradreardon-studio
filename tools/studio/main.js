@@ -75,6 +75,8 @@ server.listen(PORT, () => console.log(`Studio API running on ${PORT}`))
 // ── Electron window ──
 let mainWindow
 
+console.log('appPath:', app.getAppPath())
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 860,
