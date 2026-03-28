@@ -1,0 +1,35 @@
+{
+  "name": "bradreardon-studio",
+  "version": "1.0.0",
+  "description": "Local photo management tool for bradreardon.studio",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build --win"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+    "build": {
+    "appId": "bradreardon.studio",
+    "productName": "Brad Reardon Studio",
+    "win": {
+      "icon": "icon.ico",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico"
+    },
+    "files": [
+      "**/*",
+      "icon.ico"
+    ]
+  }
+}
