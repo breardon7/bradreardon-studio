@@ -68,15 +68,6 @@ export const photos: Photo[] = [
     cover: true,
   },
   {
-    slug: 'shadow-study-iv',
-    src: '/images/abstract/shadow-study-4.jpg',
-    alt: 'Abstract shadow pattern study number four',
-    title: 'Shadow Study IV',
-    series: 'Abstract',
-    aspectRatio: '1',
-    year: 2023,
-  },
-  {
     slug: 'colors-of-cdmx-001-2025',
     src: '/images/architecture/1-DSCF5662.jpg',
     alt: 'Museo Casa Estudio Frida Kahlo',
@@ -84,6 +75,17 @@ export const photos: Photo[] = [
     series: 'Architecture',
     aspectRatio: '2/3',
     year: 2025,
+  },
+  {
+    slug: 'colors-of-cdmx-002-2025',
+    src: '/images/architecture/2-DSCF5685.jpg',
+    alt: 'Museo Casa Estudio Diego Rivera',
+    title: 'Colors of CDMX 002',
+    series: 'Architecture',
+    aspectRatio: '2/3',
+    year: 2025,
+    featured: true,
+    cover: true,
   },
 ]
 

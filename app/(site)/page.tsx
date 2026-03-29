@@ -2,12 +2,15 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { photos, SERIES } from '@/content/photos'
+import { seriesConfig } from '@/content/series'
 
 export const metadata: Metadata = {
   title: 'Brad Reardon — Photography',
 }
 
-const covers = SERIES.map(series => ({
+const visibleSeries = SERIES.filter(s => seriesConfig[s]?.visible !== false)
+
+const covers = visibleSeries.map(series => ({
   series,
   photo: photos.find(p => p.series === series && p.cover) ?? photos.find(p => p.series === series),
 })).filter(c => c.photo)

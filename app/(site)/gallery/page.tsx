@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { photos, SERIES } from '@/content/photos'
+import { seriesConfig } from '@/content/series'
 import type { Photo } from '@/content/photos'
 import PhotoLightbox from '@/components/PhotoLightbox'
 
 const ALL = 'All'
-const tabs = [ALL, ...SERIES]
+const visibleSeries = SERIES.filter(s => seriesConfig[s]?.visible !== false)
+const tabs = [ALL, ...visibleSeries]
 
 export default function GalleryPage() {
   const searchParams = useSearchParams()
@@ -17,20 +19,20 @@ export default function GalleryPage() {
 
   useEffect(() => {
     const s = searchParams.get('series')
-    if (s && (SERIES as readonly string[]).includes(s)) setActive(s)
+    if (s && (visibleSeries as readonly string[]).includes(s)) setActive(s)
   }, [searchParams])
 
-  const visible: Photo[] = active === ALL
-    ? photos
+  const visiblePhotos: Photo[] = active === ALL
+    ? photos.filter(p => seriesConfig[p.series]?.visible !== false)
     : photos.filter(p => p.series === active)
 
   const handlePrev = useCallback(() => {
-    setLightboxIndex(i => i !== null ? (i - 1 + visible.length) % visible.length : null)
-  }, [visible.length])
+    setLightboxIndex(i => i !== null ? (i - 1 + visiblePhotos.length) % visiblePhotos.length : null)
+  }, [visiblePhotos.length])
 
   const handleNext = useCallback(() => {
-    setLightboxIndex(i => i !== null ? (i + 1) % visible.length : null)
-  }, [visible.length])
+    setLightboxIndex(i => i !== null ? (i + 1) % visiblePhotos.length : null)
+  }, [visiblePhotos.length])
 
   return (
     <div className="flex flex-col flex-1">
@@ -54,7 +56,7 @@ export default function GalleryPage() {
           ))}
         </ul>
         <span className="ml-auto text-[11px] tracking-[.1em] pb-[10px]" style={{ color: '#ccc' }}>
-          {visible.length} images
+          {visiblePhotos.length} images
         </span>
       </div>
 
@@ -68,7 +70,7 @@ export default function GalleryPage() {
             maxWidth: '960px',
           }}
         >
-          {visible.map((photo, i) => (
+          {visiblePhotos.map((photo, i) => (
             <div
               key={photo.slug}
               className="group relative overflow-hidden cursor-pointer"
@@ -99,7 +101,7 @@ export default function GalleryPage() {
       {/* ── Lightbox ── */}
       {lightboxIndex !== null && (
         <PhotoLightbox
-          photos={visible}
+          photos={visiblePhotos}
           currentIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onPrev={handlePrev}
