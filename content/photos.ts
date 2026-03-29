@@ -76,6 +76,15 @@ export const photos: Photo[] = [
     aspectRatio: '1',
     year: 2023,
   },
+  {
+    slug: 'colors-of-cdmx-001-2025',
+    src: '/images/architecture/1-DSCF5662.jpg',
+    alt: 'Museo Casa Estudio Frida Kahlo',
+    title: 'Colors of CDMX 001',
+    series: 'Architecture',
+    aspectRatio: '2/3',
+    year: 2025,
+  },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
