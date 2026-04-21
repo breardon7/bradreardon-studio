@@ -1,54 +1,105 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
-import { photos, SERIES } from '@/content/photos'
-import { seriesConfig } from '@/content/series'
+import { photos } from '@/content/photos'
+import { featuredOrder } from '@/content/series'
 
 export const metadata: Metadata = {
   title: 'Brad Reardon — Photography',
 }
 
-const visibleSeries = SERIES.filter(s => seriesConfig[s]?.visible !== false)
+const photoMap = Object.fromEntries(photos.map(p => [p.slug, p]))
 
-const covers = visibleSeries.map(series => ({
-  series,
-  photo: photos.find(p => p.series === series && p.cover) ?? photos.find(p => p.series === series),
-})).filter(c => c.photo)
+const homepagePhotos = (() => {
+  const seen = new Set<string>()
+  const result = []
+  for (const slug of featuredOrder) {
+    if (photoMap[slug] && !seen.has(slug)) {
+      seen.add(slug)
+      result.push(photoMap[slug])
+    }
+  }
+  for (const p of photos) {
+    if (p.featured && !seen.has(p.slug)) {
+      seen.add(p.slug)
+      result.push(p)
+    }
+  }
+  return result
+})()
+
+function parseRatio(ratio: string): number {
+  if (!ratio) return 1
+  const parts = ratio.split('/')
+  if (parts.length === 2) return parseFloat(parts[0]) / parseFloat(parts[1])
+  return parseFloat(ratio) || 1
+}
+
+const COL_WIDTH = 467
+const ROW_UNIT = 4
+
+function getSpan(aspectRatio: string): number {
+  const ratio = parseRatio(aspectRatio)
+  const heightPx = COL_WIDTH / ratio
+  return Math.ceil(heightPx / ROW_UNIT)
+}
 
 export default function HomePage() {
+  if (homepagePhotos.length === 0) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center">
+        <p className="text-[13px] tracking-[.2em] uppercase" style={{ color: '#999' }}>
+          No featured photos yet
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col flex-1">
 
-      {/* ── Series cover grid ── */}
-      <div className="w-full flex justify-center">
+      {/* ── Masonry grid ── */}
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
         <div
-          className="grid grid-cols-2 md:grid-cols-3"
-          style={{ gap: '2px', maxWidth: '1700px', width: '100%' }}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridAutoRows: ROW_UNIT + 'px',
+            columnGap: '2px',
+            rowGap: '0px',
+            width: '100%',
+            maxWidth: '1400px',
+          }}
         >
-          {covers.map(({ series, photo }, i) => {
-            if (!photo) return null
-            const tall = i % 3 === 1
+          {homepagePhotos.map((photo, i) => {
+            const span = getSpan(photo.aspectRatio)
             return (
               <Link
-                key={series}
-                href={`/gallery?series=${encodeURIComponent(series)}`}
+                key={photo.slug}
+                href={`/gallery?series=${encodeURIComponent(photo.series)}`}
                 className="group relative overflow-hidden block"
-                style={{ aspectRatio: tall ? '3/4' : '4/5', backgroundColor: '#f5f5f5' }}
+                style={{
+                  gridRow: 'span ' + span,
+                  marginBottom: '2px',
+                  backgroundColor: '#f5f5f5',
+                }}
               >
                 <Image
                   src={photo.src}
                   alt={photo.alt}
-                  fill
-                  sizes="(max-width: 768px) 50vw, 280px"
-                  className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                  priority={i < 3}
+                  width={800}
+                  height={0}
+                  sizes="(max-width: 768px) 50vw, 467px"
+                  className="w-full h-auto block"
+                  priority={i < 4}
+                  style={{ display: 'block', width: '100%', height: 'auto' }}
                 />
                 <div
                   className="absolute inset-0 flex flex-col justify-end p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                   style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.45), transparent)' }}
                 >
                   <p className="text-[10px] tracking-[.2em] uppercase text-white" style={{ fontWeight: 300 }}>
-                    {series}
+                    {photo.series}
                   </p>
                 </div>
               </Link>

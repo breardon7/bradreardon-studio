@@ -16,7 +16,10 @@ export default function Nav() {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="flex-shrink-0 border-b" style={{ borderColor: '#e5e5e5', backgroundColor: '#ffffff' }}>
+    <header
+      className="flex-shrink-0 border-b sticky top-0 z-50"
+      style={{ borderColor: '#e5e5e5', backgroundColor: '#ffffff' }}
+    >
       <nav className="px-9 h-[80px] flex items-baseline justify-between pt-[32px]">
 
         {/* Wordmark */}

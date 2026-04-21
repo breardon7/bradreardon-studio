@@ -36,6 +36,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    overflow-y: auto;
   }
 
   ::-webkit-scrollbar         { width: 4px; }

@@ -26,30 +26,75 @@ function readSeriesConfig() {
   return result
 }
 
-function writeSeriesConfig(config) {
-  const entries = Object.entries(config)
+function readFeaturedOrder() {
+  if (!fs.existsSync(SERIES_TS)) return []
+  const content = fs.readFileSync(SERIES_TS, 'utf8')
+  const match = content.match(/export const featuredOrder:\s*string\[\]\s*=\s*\[([\s\S]*?)\]/)
+  if (!match) return []
+  return [...match[1].matchAll(/'([^']+)'/g)].map(m => m[1])
+}
+
+function readSeriesOrder() {
+  if (!fs.existsSync(SERIES_TS)) return {}
+  const content = fs.readFileSync(SERIES_TS, 'utf8')
+  const match = content.match(/export const seriesOrder:\s*Record<string,\s*string\[\]>\s*=\s*\{([\s\S]*?)\n\}/)
+  if (!match) return {}
+  const result = {}
+  const re = /'([^']+)':\s*\[([\s\S]*?)\]/g
+  let m
+  while ((m = re.exec(match[1])) !== null) {
+    result[m[1]] = [...m[2].matchAll(/'([^']+)'/g)].map(x => x[1])
+  }
+  return result
+}
+
+function writeSeriesTS(config, featuredOrder, seriesOrder) {
+  const configEntries = Object.entries(config)
     .map(([k, v]) => "  '" + k + "': { visible: " + v.visible + " },")
     .join('\n')
+
+  const featuredEntries = featuredOrder.length
+    ? '\n' + featuredOrder.map(s => "  '" + s + "',").join('\n') + '\n'
+    : ''
+
+  const seriesOrderEntries = Object.entries(seriesOrder)
+    .map(([series, slugs]) => {
+      const inner = slugs.length
+        ? '\n    ' + slugs.map(s => "'" + s + "'").join(',\n    ') + ',\n  '
+        : ''
+      return "  '" + series + "': [" + inner + "],"
+    })
+    .join('\n')
+
   const content =
     "export interface SeriesConfig {\n" +
     "  visible: boolean\n" +
     "}\n\n" +
     "export const seriesConfig: Record<string, SeriesConfig> = {\n" +
-    entries + "\n" +
+    configEntries + "\n" +
     "}\n\n" +
     "export function getVisibleSeries(): string[] {\n" +
     "  return Object.entries(seriesConfig)\n" +
     "    .filter(([, v]) => v.visible)\n" +
     "    .map(([k]) => k)\n" +
+    "}\n\n" +
+    "// Slugs of featured photos in homepage display order\n" +
+    "export const featuredOrder: string[] = [" + featuredEntries + "]\n\n" +
+    "// Per-series photo display order\n" +
+    "export const seriesOrder: Record<string, string[]> = {\n" +
+    (seriesOrderEntries ? seriesOrderEntries + "\n" : "") +
     "}\n"
+
   fs.writeFileSync(SERIES_TS, content, 'utf8')
 }
 
 function ensureSeriesInConfig(name) {
   const config = readSeriesConfig()
+  const order = readFeaturedOrder()
+  const seriesOrd = readSeriesOrder()
   if (!config[name]) {
     config[name] = { visible: true }
-    writeSeriesConfig(config)
+    writeSeriesTS(config, order, seriesOrd)
   }
 }
 
@@ -83,39 +128,123 @@ function readAllPhotos() {
       year: getNum('year'),
       cover: getBool('cover'),
       featured: getBool('featured'),
+      hidden: getBool('hidden'),
     })
   }
   return results
 }
 
-function updatePhotoField(slug, field, value) {
+function setPhotoBoolean(slug, field, value) {
   let content = fs.readFileSync(PHOTOS_TS, 'utf8')
-  // Find the photo block by slug
-  const slugPattern = "slug: '" + slug + "'"
-  const slugIdx = content.indexOf(slugPattern)
+  const slugIdx = content.indexOf("slug: '" + slug + "'")
   if (slugIdx === -1) throw new Error('Photo not found: ' + slug)
-
-  // Find the enclosing block start/end
   const blockStart = content.lastIndexOf('{', slugIdx)
   const blockEnd = content.indexOf('},', slugIdx) + 2
+  let block = content.slice(blockStart, blockEnd)
+  const fieldRe = new RegExp('\\n\\s*' + field + ': true,?')
+  if (value) {
+    if (!fieldRe.test(block)) {
+      block = block.replace(/(year:\s*\d+,)/, '$1\n    ' + field + ': true,')
+    }
+  } else {
+    block = block.replace(fieldRe, '')
+  }
+  content = content.slice(0, blockStart) + block + content.slice(blockEnd)
+  fs.writeFileSync(PHOTOS_TS, content, 'utf8')
+}
 
+function clearCoverForSeries(seriesName, exceptSlug) {
+  const photos = readAllPhotos()
+  photos.forEach(p => {
+    if (p.series === seriesName && p.cover && p.slug !== exceptSlug) {
+      setPhotoBoolean(p.slug, 'cover', false)
+    }
+  })
+}
+
+function updatePhotoMetadata(slug, fields) {
+  let content = fs.readFileSync(PHOTOS_TS, 'utf8')
+  const slugIdx = content.indexOf("slug: '" + slug + "'")
+  if (slugIdx === -1) throw new Error('Photo not found: ' + slug)
+  const blockStart = content.lastIndexOf('{', slugIdx)
+  const blockEnd = content.indexOf('},', slugIdx) + 2
   let block = content.slice(blockStart, blockEnd)
 
-  if (typeof value === 'boolean') {
-    const fieldRe = new RegExp('\\n\\s*' + field + ': true,?')
-    if (value) {
-      // add if not present
-      if (!fieldRe.test(block)) {
-        block = block.replace(/(year:\s*\d+,)/, '$1\n    ' + field + ': true,')
-      }
-    } else {
-      // remove if present
-      block = block.replace(fieldRe, '')
+  const stringFields = ['title', 'alt', 'series', 'aspectRatio']
+  stringFields.forEach(function(field) {
+    if (fields[field] !== undefined) {
+      block = block.replace(
+        new RegExp("(" + field + ":\\s*)'[^']*'"),
+        "$1'" + fields[field].replace(/'/g, "\\'") + "'"
+      )
     }
+  })
+
+  if (fields.year !== undefined) {
+    block = block.replace(/(year:\s*)\d+/, '$1' + parseInt(fields.year))
   }
 
   content = content.slice(0, blockStart) + block + content.slice(blockEnd)
   fs.writeFileSync(PHOTOS_TS, content, 'utf8')
+}
+
+function deletePhoto(slug) {
+  // 1. Find and remove block from photos.ts
+  let content = fs.readFileSync(PHOTOS_TS, 'utf8')
+  const slugIdx = content.indexOf("slug: '" + slug + "'")
+  if (slugIdx === -1) throw new Error('Photo not found: ' + slug)
+  const blockStart = content.lastIndexOf('{', slugIdx)
+  const blockEnd = content.indexOf('},', slugIdx) + 2
+  const block = content.slice(blockStart, blockEnd)
+
+  // Get src so we can delete the file
+  const srcMatch = block.match(/src:\s*'([^']*)'/)
+  const src = srcMatch ? srcMatch[1] : null
+
+  content = content.slice(0, blockStart) + content.slice(blockEnd)
+  // Clean up any double blank lines left behind
+  content = content.replace(/\n{3,}/g, '\n\n')
+  fs.writeFileSync(PHOTOS_TS, content, 'utf8')
+
+  // 2. Remove from featuredOrder and seriesOrder in series.ts
+  const config = readSeriesConfig()
+  const featuredOrd = readFeaturedOrder().filter(s => s !== slug)
+  const seriesOrd = readSeriesOrder()
+  Object.keys(seriesOrd).forEach(k => {
+    seriesOrd[k] = seriesOrd[k].filter(s => s !== slug)
+  })
+  writeSeriesTS(config, featuredOrd, seriesOrd)
+
+  // 3. Delete image file from public/images/
+  if (src) {
+    const filePath = path.join(PROJECT_ROOT, 'public', src)
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+  }
+}
+
+function renameSeries(oldName, newName) {
+  let content = fs.readFileSync(PHOTOS_TS, 'utf8')
+  const seriesBlockMatch = content.match(/export const SERIES\s*=\s*\[([\s\S]*?)\]\s*as const/)
+  if (seriesBlockMatch) {
+    const newBlock = seriesBlockMatch[0].replace("'" + oldName + "'", "'" + newName + "'")
+    content = content.replace(seriesBlockMatch[0], newBlock)
+  }
+  const photoRe = new RegExp("series: '" + oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'", 'g')
+  content = content.replace(photoRe, "series: '" + newName + "'")
+  fs.writeFileSync(PHOTOS_TS, content, 'utf8')
+
+  const config = readSeriesConfig()
+  const featuredOrd = readFeaturedOrder()
+  const seriesOrd = readSeriesOrder()
+  if (config[oldName] !== undefined) {
+    config[newName] = config[oldName]
+    delete config[oldName]
+  }
+  if (seriesOrd[oldName] !== undefined) {
+    seriesOrd[newName] = seriesOrd[oldName]
+    delete seriesOrd[oldName]
+  }
+  writeSeriesTS(config, featuredOrd, seriesOrd)
 }
 
 // ── server ────────────────────────────────────────────────────────────────────
@@ -123,10 +252,8 @@ function updatePhotoField(slug, field, value) {
 function startServer() {
   const server = express()
   const upload = multer({ dest: path.join(PROJECT_ROOT, 'tools/studio/tmp/') })
-
   server.use(express.json())
 
-  // GET /api/series — all series with visibility
   server.get('/api/series', (req, res) => {
     try {
       const content = fs.readFileSync(PHOTOS_TS, 'utf8')
@@ -140,7 +267,6 @@ function startServer() {
     }
   })
 
-  // POST /api/series/add
   server.post('/api/series/add', (req, res) => {
     const { name } = req.body
     if (!name) return res.status(400).json({ error: 'Missing name' })
@@ -160,21 +286,130 @@ function startServer() {
     }
   })
 
-  // POST /api/series/visibility
-  server.post('/api/series/visibility', (req, res) => {
-    const { name, visible } = req.body
-    if (!name || typeof visible !== 'boolean') return res.status(400).json({ error: 'Missing name or visible' })
+  server.post('/api/series/rename', (req, res) => {
+    const { oldName, newName } = req.body
+    if (!oldName || !newName) return res.status(400).json({ error: 'Missing names' })
     try {
-      const config = readSeriesConfig()
-      config[name] = { visible }
-      writeSeriesConfig(config)
+      renameSeries(oldName, newName)
       res.json({ success: true })
     } catch (e) {
       res.status(500).json({ error: e.message })
     }
   })
 
-  // POST /api/upload
+  server.post('/api/series/visibility', (req, res) => {
+    const { name, visible } = req.body
+    if (!name || typeof visible !== 'boolean') return res.status(400).json({ error: 'Missing name or visible' })
+    try {
+      const config = readSeriesConfig()
+      const featuredOrd = readFeaturedOrder()
+      const seriesOrd = readSeriesOrder()
+      config[name] = { visible }
+      writeSeriesTS(config, featuredOrd, seriesOrd)
+      res.json({ success: true })
+    } catch (e) {
+      res.status(500).json({ error: e.message })
+    }
+  })
+
+  // POST /api/series/delete — remove series from SERIES array + seriesConfig
+  // Blocked if any photos still belong to this series
+  server.post('/api/series/delete', (req, res) => {
+    const { name } = req.body
+    if (!name) return res.status(400).json({ error: 'Missing name' })
+    try {
+      const photos = readAllPhotos()
+      const inUse = photos.filter(p => p.series === name)
+      if (inUse.length > 0) {
+        return res.status(400).json({
+          error: 'Cannot delete — ' + inUse.length + ' photo' + (inUse.length > 1 ? 's' : '') + ' still in this series'
+        })
+      }
+
+      // Remove from SERIES array in photos.ts
+      let content = fs.readFileSync(PHOTOS_TS, 'utf8')
+      const match = content.match(/export const SERIES\s*=\s*\[([\s\S]*?)\]\s*as const/)
+      if (match) {
+        const newBlock = match[0].replace(new RegExp("\\s*'" + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "',?"), '')
+        content = content.replace(match[0], newBlock)
+        fs.writeFileSync(PHOTOS_TS, content, 'utf8')
+      }
+
+      // Remove from series.ts config + seriesOrder
+      const config = readSeriesConfig()
+      const featuredOrd = readFeaturedOrder()
+      const seriesOrd = readSeriesOrder()
+      delete config[name]
+      delete seriesOrd[name]
+      writeSeriesTS(config, featuredOrd, seriesOrd)
+
+      res.json({ success: true })
+    } catch (e) {
+      res.status(500).json({ error: e.message })
+    }
+  })
+
+  server.get('/api/featured', (req, res) => {
+    try {
+      const order = readFeaturedOrder()
+      const photos = readAllPhotos()
+      const photoMap = {}
+      photos.forEach(p => { photoMap[p.slug] = p })
+      const ordered = order.filter(slug => photoMap[slug] && photoMap[slug].featured).map(slug => photoMap[slug])
+      photos.forEach(p => { if (p.featured && !order.includes(p.slug)) ordered.push(p) })
+      res.json({ featured: ordered })
+    } catch (e) {
+      res.status(500).json({ error: e.message })
+    }
+  })
+
+  server.post('/api/featured/reorder', (req, res) => {
+    const { order } = req.body
+    if (!Array.isArray(order)) return res.status(400).json({ error: 'Missing order array' })
+    try {
+      const config = readSeriesConfig()
+      const seriesOrd = readSeriesOrder()
+      writeSeriesTS(config, order, seriesOrd)
+      res.json({ success: true })
+    } catch (e) {
+      res.status(500).json({ error: e.message })
+    }
+  })
+
+  server.get('/api/series-order/:series', (req, res) => {
+    try {
+      const seriesName = decodeURIComponent(req.params.series)
+      const seriesOrd = readSeriesOrder()
+      const photos = readAllPhotos().filter(p => p.series === seriesName)
+      const order = seriesOrd[seriesName] || []
+      const photoMap = {}
+      photos.forEach(p => { photoMap[p.slug] = p })
+      const seen = new Set()
+      const result = []
+      order.forEach(slug => { if (photoMap[slug]) { result.push(photoMap[slug]); seen.add(slug) } })
+      photos.forEach(p => { if (!seen.has(p.slug)) result.push(p) })
+      res.json({ photos: result })
+    } catch (e) {
+      res.status(500).json({ error: e.message })
+    }
+  })
+
+  server.post('/api/series-order/:series', (req, res) => {
+    const { order } = req.body
+    if (!Array.isArray(order)) return res.status(400).json({ error: 'Missing order array' })
+    try {
+      const seriesName = decodeURIComponent(req.params.series)
+      const config = readSeriesConfig()
+      const featuredOrd = readFeaturedOrder()
+      const seriesOrd = readSeriesOrder()
+      seriesOrd[seriesName] = order
+      writeSeriesTS(config, featuredOrd, seriesOrd)
+      res.json({ success: true })
+    } catch (e) {
+      res.status(500).json({ error: e.message })
+    }
+  })
+
   server.post('/api/upload', upload.single('image'), (req, res) => {
     const { series } = req.body
     if (!req.file || !series) return res.status(400).json({ error: 'Missing file or series' })
@@ -182,12 +417,10 @@ function startServer() {
     const destDir = path.join(PUBLIC_IMAGES, seriesFolder)
     if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true })
     const filename = req.file.originalname
-    const destPath = path.join(destDir, filename)
-    fs.renameSync(req.file.path, destPath)
+    fs.renameSync(req.file.path, path.join(destDir, filename))
     res.json({ src: '/images/' + seriesFolder + '/' + filename, filename })
   })
 
-  // POST /api/photos — add new photo
   server.post('/api/photos', (req, res) => {
     const { slug, src, alt, title, series, aspectRatio, year, featured, cover } = req.body
     if (!slug || !src || !title || !series) return res.status(400).json({ error: 'Missing required fields' })
@@ -205,7 +438,7 @@ function startServer() {
     try {
       let content = fs.readFileSync(PHOTOS_TS, 'utf8')
       const insertPoint = content.lastIndexOf(']')
-      if (insertPoint === -1) return res.status(500).json({ error: 'Could not find array in photos.ts' })
+      if (insertPoint === -1) return res.status(500).json({ error: 'Could not find array' })
       content = content.slice(0, insertPoint) + entry + '\n' + content.slice(insertPoint)
       fs.writeFileSync(PHOTOS_TS, content, 'utf8')
       res.json({ success: true })
@@ -214,7 +447,6 @@ function startServer() {
     }
   })
 
-  // GET /api/photos — all photos with full metadata
   server.get('/api/photos', (req, res) => {
     try {
       res.json({ photos: readAllPhotos() })
@@ -223,17 +455,65 @@ function startServer() {
     }
   })
 
-  // PATCH /api/photos/:slug — update cover or featured
+  // DELETE /api/photos/:slug — remove from photos.ts, series.ts, and disk
+  server.delete('/api/photos/:slug', (req, res) => {
+    const { slug } = req.params
+    try {
+      deletePhoto(slug)
+      res.json({ success: true })
+    } catch (e) {
+      res.status(500).json({ error: e.message })
+    }
+  })
+
+  // PATCH /api/photos/:slug — update boolean fields (cover, featured)
   server.patch('/api/photos/:slug', (req, res) => {
     const { slug } = req.params
     const { field, value } = req.body
     if (!field || typeof value === 'undefined') return res.status(400).json({ error: 'Missing field or value' })
     try {
-      updatePhotoField(slug, field, value)
+      if (field === 'cover' && value === true) {
+        const photos = readAllPhotos()
+        const photo = photos.find(p => p.slug === slug)
+        if (photo) clearCoverForSeries(photo.series, slug)
+      }
+      setPhotoBoolean(slug, field, value)
+      if (field === 'featured') {
+        const featuredOrd = readFeaturedOrder()
+        const config = readSeriesConfig()
+        const seriesOrd = readSeriesOrder()
+        if (value && !featuredOrd.includes(slug)) featuredOrd.push(slug)
+        else if (!value) {
+          const idx = featuredOrd.indexOf(slug)
+          if (idx !== -1) featuredOrd.splice(idx, 1)
+        }
+        writeSeriesTS(config, featuredOrd, seriesOrd)
+      }
       res.json({ success: true })
     } catch (e) {
       res.status(500).json({ error: e.message })
     }
+  })
+
+  // PUT /api/photos/:slug — update metadata fields
+  server.put('/api/photos/:slug', (req, res) => {
+    const { slug } = req.params
+    const { title, alt, series, aspectRatio, year } = req.body
+    try {
+      updatePhotoMetadata(slug, { title, alt, series, aspectRatio, year })
+      res.json({ success: true })
+    } catch (e) {
+      res.status(500).json({ error: e.message })
+    }
+  })
+
+  // GET /photo-image?src=/images/... — serve project images for Studio thumbnails
+  server.get('/photo-image', (req, res) => {
+    const src = req.query.src
+    if (!src) return res.status(400).send('Missing src')
+    const filePath = path.join(PROJECT_ROOT, 'public', src)
+    if (!fs.existsSync(filePath)) return res.status(404).send('Not found')
+    res.sendFile(filePath)
   })
 
   server.listen(PORT, () => console.log('[studio] server on ' + PORT))
@@ -243,10 +523,10 @@ function startServer() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 960,
-    height: 720,
+    width: 1000,
+    height: 740,
     minWidth: 800,
-    minHeight: 600,
+    minHeight: 640,
     title: 'Brad Reardon · Studio',
     icon: path.join(__dirname, 'icon.ico'),
     backgroundColor: '#ffffff',
@@ -255,7 +535,6 @@ function createWindow() {
       contextIsolation: true,
     },
   })
-
   mainWindow.loadFile(path.join(__dirname, 'index.html'))
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.closeDevTools()
