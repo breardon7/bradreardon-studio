@@ -39,3 +39,25 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Studio desktop tool
+tools/studio/node_modules/
+tools/studio/dist/
+tools/studio/tmp/
+
+# Images
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.tiff
+*.tif
+*.bmp
+*.heic
+*.heif
+*.raw
+*.arw
+*.cr2
+*.nef
+*.raf
