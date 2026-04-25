@@ -21,20 +21,24 @@ export function getVisibleSeries(): string[] {
 
 // Slugs of featured photos in homepage display order
 export const featuredOrder: string[] = [
+  'colors-of-cdmx-001-2025',
+  'colors-of-cdmx-002-2025',
+  'colors-of-cdmx-003-2025',
   'clasped-001-2026',
+  'clasped-002-2026',
+  'clasped-003-2026',
+  'atc-004-2025',
+  'atc-007-2026',
   'atc-005-2025',
   'moons-edge',
-  'crimson-bridge-v2',
-  'endless-pane-005-2026',
-  'colors-of-cdmx-002-2025',
-  'clasped-002-2026',
-  'atc-007-2026',
+  'crimson-bridge-2026',
+  'panning-cyclist-2025',
+  'urban-crown-shyness',
+  'alwyn-court-2025',
+  'drops-from-above-2025',
   'budapest-001-2025',
   'sp002-2025',
-  'atc-004-2025',
-  'sp004-2025',
-  'parked-2025',
-  'alwyn-court-2025',
+  'still-life-001-2026',
 ]
 
 // Per-series photo display order
@@ -62,5 +66,10 @@ export const seriesOrder: Record<string, string[]> = {
     'atc-007-2025',
     'atc-006-2025',
     'atc-003-2025',
+  ],
+  'Clasped': [
+    'clasped-001-2026',
+    'clasped-002-2026',
+    'clasped-003-2026',
   ],
 }

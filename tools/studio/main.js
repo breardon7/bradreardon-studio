@@ -129,6 +129,7 @@ function readAllPhotos() {
       cover: getBool('cover'),
       featured: getBool('featured'),
       hidden: getBool('hidden'),
+      print: getBool('print'),
     })
   }
   return results
@@ -220,6 +221,12 @@ function deletePhoto(slug) {
     const filePath = path.join(PROJECT_ROOT, 'public', src)
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
   }
+
+  // 4. Remove from prints.ts if listed
+  if (fs.existsSync(PRINTS_TS)) {
+    const listings = readPrints().filter(l => l.slug !== slug)
+    writePrints(listings)
+  }
 }
 
 function renameSeries(oldName, newName) {
@@ -245,6 +252,74 @@ function renameSeries(oldName, newName) {
     delete seriesOrd[oldName]
   }
   writeSeriesTS(config, featuredOrd, seriesOrd)
+}
+
+
+// ── prints.ts helpers ─────────────────────────────────────────────────────────
+
+const PRINTS_TS = path.join(PROJECT_ROOT, 'content/prints.ts')
+
+function readPrints() {
+  if (!fs.existsSync(PRINTS_TS)) return []
+  const content = fs.readFileSync(PRINTS_TS, 'utf8')
+  const results = []
+  const re = /\{\s*\n([\s\S]*?)\n\s*\}/g
+  let m
+  while ((m = re.exec(content)) !== null) {
+    const block = m[0]
+    try {
+      const obj = Function('"use strict"; return (' + block + ')')()
+      if (obj && obj.slug) results.push(obj)
+    } catch (e) {}
+  }
+  return results
+}
+
+function writePrints(listings) {
+  const entries = listings.map(function(l) {
+    const sizes = (l.sizes || []).map(function(s) {
+      return '      {\n' +
+        "        label: '" + s.label + "',\n" +
+        '        price: ' + s.price + ',\n' +
+        (s.edition !== undefined ? '        edition: ' + s.edition + ',\n' : '') +
+        '        available: ' + s.available + ',\n' +
+        '      }'
+    }).join(',\n')
+
+    return '  {\n' +
+      "    slug: '" + l.slug + "',\n" +
+      '    visible: ' + (l.visible !== false) + ',\n' +
+      "    priceLine: '" + (l.priceLine || '').replace(/'/g, "\\'") + "',\n" +
+      "    medium: '" + (l.medium || '').replace(/'/g, "\\'") + "',\n" +
+      "    paper: '" + (l.paper || '').replace(/'/g, "\\'") + "',\n" +
+      "    finish: '" + (l.finish || '').replace(/'/g, "\\'") + "',\n" +
+      "    notes: '" + (l.notes || '').replace(/'/g, "\\'") + "',\n" +
+      '    sizes: [\n' + sizes + '\n    ],\n' +
+      '  }'
+  }).join(',\n')
+
+  const out =
+    "export interface PrintSize {\n" +
+    "  label: string\n" +
+    "  price: number\n" +
+    "  edition?: number\n" +
+    "  available: boolean\n" +
+    "}\n\n" +
+    "export interface PrintListing {\n" +
+    "  slug: string\n" +
+    "  visible: boolean\n" +
+    "  priceLine: string\n" +
+    "  medium: string\n" +
+    "  paper: string\n" +
+    "  finish: string\n" +
+    "  notes: string\n" +
+    "  sizes: PrintSize[]\n" +
+    "}\n\n" +
+    "export const prints: PrintListing[] = [\n" +
+    (entries ? entries + '\n' : '') +
+    "]\n"
+
+  fs.writeFileSync(PRINTS_TS, out, 'utf8')
 }
 
 // ── server ────────────────────────────────────────────────────────────────────
@@ -505,6 +580,68 @@ function startServer() {
     } catch (e) {
       res.status(500).json({ error: e.message })
     }
+  })
+
+  // ── prints routes ───────────────────────────────────────────────────────────
+
+  // GET /api/prints
+  server.get('/api/prints', (req, res) => {
+    try { res.json({ prints: readPrints() }) }
+    catch (e) { res.status(500).json({ error: e.message }) }
+  })
+
+  // PUT /api/prints/:slug — create or fully replace a listing
+  server.put('/api/prints/:slug', (req, res) => {
+    const { slug } = req.params
+    const { visible, medium, paper, finish, notes, sizes } = req.body
+    try {
+      const listings = readPrints()
+      const idx = listings.findIndex(l => l.slug === slug)
+      const updated = { slug, visible: visible !== false, medium: medium || '', paper: paper || '', finish: finish || '', notes: notes || '', sizes: sizes || [] }
+      if (idx !== -1) listings[idx] = updated
+      else listings.push(updated)
+      writePrints(listings)
+      res.json({ success: true })
+    } catch (e) { res.status(500).json({ error: e.message }) }
+  })
+
+  // PATCH /api/prints/:slug — update individual fields
+  server.patch('/api/prints/:slug', (req, res) => {
+    const { slug } = req.params
+    try {
+      const listings = readPrints()
+      const idx = listings.findIndex(l => l.slug === slug)
+      if (idx === -1) return res.status(404).json({ error: 'Listing not found' })
+      listings[idx] = Object.assign({}, listings[idx], req.body)
+      writePrints(listings)
+      res.json({ success: true })
+    } catch (e) { res.status(500).json({ error: e.message }) }
+  })
+
+  // POST /api/prints/reorder — rewrite prints array order
+  server.post('/api/prints/reorder', (req, res) => {
+    const { order } = req.body
+    if (!Array.isArray(order)) return res.status(400).json({ error: 'Missing order array' })
+    try {
+      const listings = readPrints()
+      const listingMap = {}
+      listings.forEach(l => { listingMap[l.slug] = l })
+      const reordered = order.filter(slug => listingMap[slug]).map(slug => listingMap[slug])
+      // preserve any not in order array
+      listings.forEach(l => { if (!order.includes(l.slug)) reordered.push(l) })
+      writePrints(reordered)
+      res.json({ success: true })
+    } catch (e) { res.status(500).json({ error: e.message }) }
+  })
+
+  // DELETE /api/prints/:slug — remove listing
+  server.delete('/api/prints/:slug', (req, res) => {
+    const { slug } = req.params
+    try {
+      const listings = readPrints().filter(l => l.slug !== slug)
+      writePrints(listings)
+      res.json({ success: true })
+    } catch (e) { res.status(500).json({ error: e.message }) }
   })
 
   // GET /photo-image?src=/images/... — serve project images for Studio thumbnails

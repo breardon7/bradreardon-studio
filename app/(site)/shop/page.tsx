@@ -1,100 +1,106 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import { photos } from '@/content/photos'
 import { prints } from '@/content/prints'
 
 export const metadata: Metadata = {
-  title: 'Prints',
+  title: 'Shop — Brad Reardon',
+}
+
+const photoMap = Object.fromEntries(photos.map(p => [p.slug, p]))
+
+const visiblePrints = prints
+  .filter(p => p.visible)
+  .map(p => ({ listing: p, photo: photoMap[p.slug] }))
+  .filter(p => p.photo)
+
+function formatPrice(cents: number): string {
+  return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })
+}
+
+function lowestPrice(sizes: { price: number; available: boolean }[]): number | null {
+  const available = sizes.filter(s => s.available)
+  if (!available.length) return null
+  return Math.min(...available.map(s => s.price))
 }
 
 export default function ShopPage() {
-  return (
-    <div className="flex flex-col flex-1">
-
-      {/* ── Header ── */}
-      <div className="grid border-b border-edge px-9 pb-6 pt-6"
-           style={{ gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-        <h1 className="font-serif text-[20px] font-normal italic text-white">Prints</h1>
-        <p className="text-[11px] leading-[1.75] text-muted max-w-[52ch]">
-          Archival giclée on Hahnemühle Photo Rag 308gsm. Each print signed,
-          numbered, and accompanied by a certificate of authenticity.
-          Ships within 7 business days from New York.
+  if (visiblePrints.length === 0) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center">
+        <p className="text-[13px] tracking-[.2em] uppercase" style={{ color: '#999' }}>
+          No prints available yet
         </p>
       </div>
+    )
+  }
 
-      {/* ── Grid ── */}
-      {/*
-        FULFILMENT NOTE:
-        Self-fulfilment flow — no add-to-cart needed at this stage.
-        Clicking a print links to /shop/[slug] where the buyer can
-        select a size and submit an inquiry via the contact API.
-        You invoice manually (Stripe Payment Link or Wave) and ship
-        after confirmation. This keeps overhead minimal while your
-        print offering is still small.
+  return (
+    <div className="flex flex-col flex-1">
+      <div className="flex-1 py-16 px-9">
 
-        When volume grows, add Stripe Checkout:
-        - Each size variant becomes a Stripe Price ID
-        - /api/checkout creates a Stripe Checkout Session
-        - Buyer lands on Stripe-hosted payment page
-        - Webhook at /api/webhook updates order status
-      */}
-      <div
-        className="grid bg-edge flex-1"
-        style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px' }}
-      >
-        {prints.map(print => (
-          <Link
-            key={print.slug}
-            href={`/shop/${print.slug}`}
-            className="group bg-bg flex flex-col p-7 hover:bg-bg2
-                       transition-colors duration-200"
+        {/* header */}
+        <div className="mx-auto mb-16" style={{ maxWidth: '960px' }}>
+          <h1
+            className="font-serif"
+            style={{ fontSize: '13px', letterSpacing: '.22em', textTransform: 'uppercase', color: '#999', fontWeight: 400 }}
           >
-            {/* Thumbnail */}
-            <div className="overflow-hidden mb-[18px]">
-              {/* Replace with actual image once available */}
-              <div
-                className="w-full aspect-[3/4] bg-gradient-to-br from-bg3 to-bg
-                           group-hover:scale-[1.02] transition-transform duration-500"
-              />
-              {/* <Image src={`/images/prints/${print.photoSlug}.jpg`} ... /> */}
-            </div>
+            Prints
+          </h1>
+        </div>
 
-            {/* Info */}
-            <div className="flex flex-col flex-1 justify-between">
-              <div>
-                <h2 className="font-serif text-[12px] italic text-white">{print.title}</h2>
-                <p className="text-[8px] tracking-[.14em] uppercase text-dim mt-[5px]">
-                  {print.sizes[0].label} – {print.sizes[print.sizes.length - 1].label}
-                  {' · '}Ed. of {print.sizes[0].edition}
-                </p>
-              </div>
-              <div className="flex justify-between items-end mt-[14px] pt-[14px] border-t border-edge">
-                <span className="text-[13px] text-text tracking-[.02em]">
-                  From ${Math.min(...print.sizes.map(s => s.price))}
-                </span>
-                <span className="text-[8px] tracking-[.12em] uppercase text-dim">
-                  Inquire →
-                </span>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* ── Footer note ── */}
-      <div className="flex justify-between items-center px-9 py-4 border-t border-edge">
-        <span className="text-[8px] tracking-[.14em] uppercase text-dim">
-          All prints ship flat · Framing available on request
-        </span>
-        <Link
-          href="/contact"
-          className="text-[9px] tracking-[.16em] uppercase text-muted
-                     hover:text-white transition-colors duration-200"
+        {/* grid */}
+        <div
+          className="grid mx-auto"
+          style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '40px 24px', maxWidth: '960px' }}
         >
-          Inquire about custom sizes →
-        </Link>
-      </div>
+          {visiblePrints.map(({ listing, photo }) => {
+            const price = lowestPrice(listing.sizes)
+            return (
+              <Link
+                key={listing.slug}
+                href={'/shop/' + listing.slug}
+                className="group block"
+                style={{ textDecoration: 'none' }}
+              >
+                {/* image */}
+                <div
+                  className="relative overflow-hidden mb-5"
+                  style={{ aspectRatio: photo.aspectRatio, backgroundColor: '#f5f5f5' }}
+                >
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 320px"
+                    className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                  />
+                </div>
 
+                {/* meta */}
+                <div>
+                  <p
+                    className="font-serif"
+                    style={{ fontSize: '15px', color: '#1a1a1a', marginBottom: '4px', fontStyle: 'italic' }}
+                  >
+                    {photo.title}
+                  </p>
+                  <p style={{ fontSize: '11px', letterSpacing: '.16em', textTransform: 'uppercase', color: '#999' }}>
+                    {photo.series} · {photo.year}
+                  </p>
+                  {(listing.priceLine || price !== null) && (
+                    <p style={{ fontSize: '12px', letterSpacing: '.08em', color: '#1a1a1a', marginTop: '8px' }}>
+                      {listing.priceLine || ('From ' + formatPrice(price!))}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+
+      </div>
     </div>
   )
 }

@@ -590,7 +590,6 @@ function loadSeriesDropdown() {
       document.getElementById('series').innerHTML = data.series.map(function(s) {
         return '<option value="' + s + '">' + s + '</option>';
       }).join('');
-      checkReady();
       var filterEl = document.getElementById('photosSeriesFilter');
       var prev = filterEl.value;
       filterEl.innerHTML = '<option value="">All series</option>' + data.series.map(function(s) {
@@ -651,9 +650,7 @@ dropZone.addEventListener('drop', function(e) { e.preventDefault(); dropZone.cla
 function checkReady() {
   submitBtn.disabled = !(uploadedFile && titleEl.value && slugEl.value && seriesEl.value);
 }
-[titleEl, slugEl, altEl].forEach(function(el) { el.addEventListener('input', checkReady); });
-seriesEl.addEventListener('change', checkReady);
-seriesEl.addEventListener('input', checkReady);
+[titleEl, slugEl, seriesEl, altEl].forEach(function(el) { el.addEventListener('input', checkReady); });
 
 submitBtn.addEventListener('click', async function() {
   submitBtn.disabled = true;

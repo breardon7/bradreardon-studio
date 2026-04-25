@@ -42,7 +42,7 @@ export default function GalleryPage() {
     if (s && (visibleSeries as readonly string[]).includes(s)) setActive(s)
   }, [searchParams])
 
-  const seriesPhotos = (photos as MediaItem[]).filter(p => p.series === active)
+  const seriesPhotos = (photos as MediaItem[]).filter(p => p.series === active && !p.hidden)
   const visiblePhotos = getOrderedPhotos(active, seriesPhotos)
   const lightboxPhotos = visiblePhotos.filter(p => !p.vimeoUrl)
 

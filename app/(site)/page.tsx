@@ -14,13 +14,13 @@ const homepagePhotos = (() => {
   const seen = new Set<string>()
   const result = []
   for (const slug of featuredOrder) {
-    if (photoMap[slug] && !seen.has(slug)) {
+    if (photoMap[slug] && !seen.has(slug) && !photoMap[slug].hidden) {
       seen.add(slug)
       result.push(photoMap[slug])
     }
   }
   for (const p of photos) {
-    if (p.featured && !seen.has(p.slug)) {
+    if (p.featured && !p.hidden && !seen.has(p.slug)) {
       seen.add(p.slug)
       result.push(p)
     }

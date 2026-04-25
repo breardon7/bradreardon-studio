@@ -1,103 +1,262 @@
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+'use client'
+
+import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
-import { prints, getPrint } from '@/content/prints'
+import { photos } from '@/content/photos'
+import { prints } from '@/content/prints'
+import type { PrintSize } from '@/content/prints'
+import { notFound } from 'next/navigation'
 
-interface Props {
-  params: { slug: string }
+const photoMap = Object.fromEntries(photos.map(p => [p.slug, p]))
+
+function formatPrice(cents: number): string {
+  return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })
 }
 
-export async function generateStaticParams() {
-  return prints.map(p => ({ slug: p.slug }))
-}
+export default function PrintPage({ params }: { params: { slug: string } }) {
+  const listing = prints.find(p => p.slug === params.slug && p.visible)
+  if (!listing) notFound()
+  const photo = photoMap[listing.slug]
+  if (!photo) notFound()
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const print = getPrint(params.slug)
-  if (!print) return {}
-  return { title: print.title }
-}
+  const availableSizes = listing.sizes.filter(s => s.available)
 
-export default function PrintPage({ params }: Props) {
-  const print = getPrint(params.slug)
-  if (!print) notFound()
+  const [selectedSize, setSelectedSize] = useState<PrintSize | null>(
+    availableSizes[0] ?? null
+  )
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [message, setMessage] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedSize || !name || !email) return
+    setStatus('sending')
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          message: message || '',
+          subject: 'Print inquiry — ' + photo.title + ' (' + selectedSize.label + ')',
+          print: {
+            title: photo.title,
+            slug: listing.slug,
+            size: selectedSize.label,
+            price: formatPrice(selectedSize.price),
+            edition: selectedSize.edition ?? null,
+            medium: listing.medium,
+            paper: listing.paper,
+            finish: listing.finish,
+          },
+        }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      setStatus('sent')
+    } catch {
+      setStatus('error')
+    }
+  }
 
   return (
-    <div className="grid flex-1" style={{ gridTemplateColumns: '1fr 1px 1fr' }}>
+    <div className="flex flex-col flex-1">
+      <div className="flex-1 py-16 px-9">
+        <div className="mx-auto" style={{ maxWidth: '960px' }}>
 
-      {/* Image */}
-      <div className="relative min-h-[520px] bg-gradient-to-br from-bg3 to-bg">
-        {/* <Image src={`/images/prints/${print.photoSlug}.jpg`} fill className="object-cover" /> */}
-      </div>
-
-      <div className="bg-edge" />
-
-      {/* Details + inquiry */}
-      <div className="flex flex-col justify-between px-12 py-11">
-        <div>
+          {/* back */}
           <Link
             href="/shop"
-            className="text-[8px] tracking-[.18em] uppercase text-dim
-                       hover:text-muted transition-colors duration-200 mb-8 block"
+            style={{ fontSize: '11px', letterSpacing: '.2em', textTransform: 'uppercase', color: '#999', textDecoration: 'none', display: 'inline-block', marginBottom: '48px' }}
           >
-            ← All prints
+            ← Shop
           </Link>
 
-          <h1 className="font-serif text-[22px] font-normal italic text-white leading-snug">
-            {print.title}
-          </h1>
-          <p className="text-[10px] tracking-[.12em] uppercase text-dim mt-2">
-            {print.medium}
-          </p>
+          <div className="grid" style={{ gridTemplateColumns: '1fr 1px 400px', gap: '0', alignItems: 'start' }}>
 
-          <p className="text-[12px] leading-[1.8] text-muted mt-5 max-w-[40ch]">
-            {print.description}
-          </p>
-
-          <div className="w-5 h-px bg-edge my-6" />
-
-          {/* Size + price table */}
-          <div className="flex flex-col gap-0">
-            {print.sizes.map(size => (
+            {/* image */}
+            <div className="pr-16">
               <div
-                key={size.label}
-                className="flex justify-between items-baseline py-[9px]
-                           border-b border-edge first:border-t text-[11px]"
+                className="relative overflow-hidden w-full"
+                style={{ aspectRatio: photo.aspectRatio, backgroundColor: '#f5f5f5' }}
               >
-                <span className="text-text">{size.label}</span>
-                <span className="text-[8px] tracking-[.12em] uppercase text-dim">
-                  Ed. of {size.edition}
-                  {size.sold ? ` · ${size.sold} sold` : ''}
-                </span>
-                <span className="text-text">${size.price}</span>
+                <Image
+                  src={photo.src}
+                  alt={photo.alt}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 560px"
+                  className="object-cover"
+                  priority
+                />
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div className="mt-5 text-[10px] leading-[1.6] text-dim">
-            <p>{print.framing}</p>
-            <p className="mt-1">{print.shipping}</p>
-            {print.certificate && (
-              <p className="mt-1">Includes certificate of authenticity.</p>
-            )}
-          </div>
-        </div>
+            {/* divider */}
+            <div style={{ background: '#e5e5e5', alignSelf: 'stretch' }} />
 
-        {/* Inquiry CTA — links to contact with subject pre-filled */}
-        <div className="pt-6 border-t border-edge">
-          <Link
-            href={`/contact?subject=${encodeURIComponent(`Print inquiry — ${print.title}`)}`}
-            className="inline-flex items-center gap-4 text-[9px] tracking-[.2em]
-                       uppercase text-muted hover:text-white transition-colors duration-200"
-          >
-            <span
-              className="block h-px bg-current transition-[width] duration-300"
-              style={{ width: 32 }}
-            />
-            Inquire about this print
-          </Link>
+            {/* detail panel */}
+            <div className="pl-16">
+
+              {/* title + meta */}
+              <p className="font-serif" style={{ fontSize: '22px', fontStyle: 'italic', color: '#1a1a1a', marginBottom: '6px' }}>
+                {photo.title}
+              </p>
+              <p style={{ fontSize: '11px', letterSpacing: '.18em', textTransform: 'uppercase', color: '#999', marginBottom: '32px' }}>
+                {photo.series} · {photo.year}
+              </p>
+
+              {/* print specs */}
+              <div style={{ marginBottom: '32px', borderTop: '1px solid #e5e5e5', paddingTop: '24px' }}>
+                {[
+                  ['Medium', listing.medium],
+                  ['Paper', listing.paper],
+                  ['Finish', listing.finish],
+                  ...(listing.notes ? [['Notes', listing.notes]] : []),
+                ].map(([label, value]) => (
+                  <div key={label} style={{ display: 'flex', gap: '16px', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '11px', letterSpacing: '.16em', textTransform: 'uppercase', color: '#999', width: '72px', flexShrink: 0 }}>
+                      {label}
+                    </span>
+                    <span style={{ fontSize: '13px', color: '#1a1a1a' }}>{value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* size selector */}
+              {availableSizes.length > 0 ? (
+                <div style={{ marginBottom: '32px', borderTop: '1px solid #e5e5e5', paddingTop: '24px' }}>
+                  <p style={{ fontSize: '11px', letterSpacing: '.18em', textTransform: 'uppercase', color: '#999', marginBottom: '14px' }}>
+                    Size
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {availableSizes.map(size => (
+                      <button
+                        key={size.label}
+                        onClick={() => setSelectedSize(size)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 16px',
+                          border: '1px solid ' + (selectedSize?.label === size.label ? '#1a1a1a' : '#e5e5e5'),
+                          background: 'none',
+                          cursor: 'pointer',
+                          transition: 'border-color 0.15s',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: '13px', color: '#1a1a1a' }}>
+                          {size.label}
+                          {size.edition && (
+                            <span style={{ fontSize: '11px', color: '#999', marginLeft: '10px', letterSpacing: '.1em', textTransform: 'uppercase' }}>
+                              Ed. {size.edition}
+                            </span>
+                          )}
+                        </span>
+                        <span style={{ fontSize: '13px', color: '#1a1a1a' }}>
+                          {formatPrice(size.price)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p style={{ fontSize: '13px', color: '#999', marginBottom: '32px' }}>
+                  Currently sold out — inquire below to join the waitlist.
+                </p>
+              )}
+
+              {/* inquiry form */}
+              <div style={{ borderTop: '1px solid #e5e5e5', paddingTop: '24px' }}>
+                <p style={{ fontSize: '11px', letterSpacing: '.18em', textTransform: 'uppercase', color: '#999', marginBottom: '20px' }}>
+                  {status === 'sent' ? 'Inquiry sent' : 'Inquire'}
+                </p>
+
+                {status === 'sent' ? (
+                  <p style={{ fontSize: '13px', color: '#1a1a1a', lineHeight: 1.7 }}>
+                    Thank you. I'll be in touch within 48 hours to confirm your order and arrange payment.
+                  </p>
+                ) : (
+                  <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {[
+                      { id: 'name', label: 'Name', value: name, setter: setName, type: 'text' },
+                      { id: 'email', label: 'Email', value: email, setter: setEmail, type: 'email' },
+                    ].map(({ id, label, value, setter, type }) => (
+                      <div key={id}>
+                        <label
+                          htmlFor={id}
+                          style={{ display: 'block', fontSize: '11px', letterSpacing: '.18em', textTransform: 'uppercase', color: '#999', marginBottom: '6px' }}
+                        >
+                          {label}
+                        </label>
+                        <input
+                          id={id}
+                          type={type}
+                          value={value}
+                          onChange={e => setter(e.target.value)}
+                          required
+                          style={{
+                            width: '100%', background: 'transparent', border: 'none',
+                            borderBottom: '1px solid #e5e5e5', fontFamily: 'Jost, sans-serif',
+                            fontWeight: 300, fontSize: '14px', color: '#1a1a1a',
+                            padding: '6px 0', outline: 'none',
+                          }}
+                        />
+                      </div>
+                    ))}
+                    <div>
+                      <label
+                        htmlFor="message"
+                        style={{ display: 'block', fontSize: '11px', letterSpacing: '.18em', textTransform: 'uppercase', color: '#999', marginBottom: '6px' }}
+                      >
+                        Message (optional)
+                      </label>
+                      <textarea
+                        id="message"
+                        value={message}
+                        onChange={e => setMessage(e.target.value)}
+                        rows={3}
+                        style={{
+                          width: '100%', background: 'transparent', border: 'none',
+                          borderBottom: '1px solid #e5e5e5', fontFamily: 'Jost, sans-serif',
+                          fontWeight: 300, fontSize: '14px', color: '#1a1a1a',
+                          padding: '6px 0', outline: 'none', resize: 'none',
+                        }}
+                      />
+                    </div>
+
+                    {status === 'error' && (
+                      <p style={{ fontSize: '12px', color: '#c0392b' }}>
+                        Something went wrong — please try again or email directly.
+                      </p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={status === 'sending' || !selectedSize}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '14px',
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        fontFamily: 'Jost, sans-serif', fontSize: '12px', fontWeight: 300,
+                        letterSpacing: '.22em', textTransform: 'uppercase',
+                        color: status === 'sending' ? '#ccc' : '#999', padding: '8px 0',
+                        transition: 'color 0.2s',
+                      }}
+                    >
+                      <span style={{ display: 'block', height: '1px', width: '32px', background: 'currentColor' }} />
+                      {status === 'sending' ? 'Sending...' : 'Send inquiry'}
+                    </button>
+                  </form>
+                )}
+              </div>
+
+            </div>
+          </div>
         </div>
       </div>
-
     </div>
   )
 }
