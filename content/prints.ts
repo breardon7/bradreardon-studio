@@ -127,7 +127,7 @@ export const prints: PrintListing[] = [
   },
   {
     slug: 'panning-cyclist-2025',
-    visible: false,
+    visible: true,
     priceLine: '',
     medium: '',
     paper: '',
@@ -139,7 +139,55 @@ export const prints: PrintListing[] = [
   },
   {
     slug: 'crimson-bridge-2026',
-    visible: false,
+    visible: true,
+    priceLine: '',
+    medium: '',
+    paper: '',
+    finish: '',
+    notes: '',
+    sizes: [
+
+    ],
+  },
+  {
+    slug: 'alwyn-court-2025',
+    visible: true,
+    priceLine: '',
+    medium: '',
+    paper: '',
+    finish: '',
+    notes: '',
+    sizes: [
+
+    ],
+  },
+  {
+    slug: 'endless-pain-001-2025',
+    visible: true,
+    priceLine: '',
+    medium: '',
+    paper: '',
+    finish: '',
+    notes: '',
+    sizes: [
+
+    ],
+  },
+  {
+    slug: 'endless-pane-003-2025',
+    visible: true,
+    priceLine: '',
+    medium: '',
+    paper: '',
+    finish: '',
+    notes: '',
+    sizes: [
+
+    ],
+  },
+  {
+    slug: 'endless-pane-005-2026',
+    visible: true,
     priceLine: '',
     medium: '',
     paper: '',
