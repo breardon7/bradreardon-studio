@@ -46,6 +46,7 @@ tools/studio/dist/
 tools/studio/tmp/
 
 # Images
+public/images/
 *.jpg
 *.jpeg
 *.png
