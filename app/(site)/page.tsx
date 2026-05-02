@@ -58,8 +58,39 @@ export default function HomePage() {
   return (
     <div className="flex flex-col flex-1">
 
-      {/* ── Masonry grid ── */}
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      {/* ── Mobile grid (1 column, no span logic) ── */}
+      <div className="md:hidden flex flex-col" style={{ gap: '2px' }}>
+        {homepagePhotos.map((photo, i) => (
+          <Link
+            key={photo.slug}
+            href={`/gallery?series=${encodeURIComponent(photo.series)}`}
+            className="group relative overflow-hidden block"
+            style={{ backgroundColor: '#f5f5f5' }}
+          >
+            <Image
+              src={photo.src}
+              alt={photo.alt}
+              width={800}
+              height={0}
+              sizes="100vw"
+              className="w-full h-auto block"
+              priority={i < 3}
+              style={{ display: 'block', width: '100%', height: 'auto' }}
+            />
+            <div
+              className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.45), transparent)' }}
+            >
+              <p className="text-[10px] tracking-[.2em] uppercase text-white" style={{ fontWeight: 300 }}>
+                {photo.series}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* ── Desktop masonry grid (3 columns, span logic) ── */}
+      <div className="hidden md:flex" style={{ justifyContent: 'center' }}>
         <div
           style={{
             display: 'grid',
@@ -89,7 +120,7 @@ export default function HomePage() {
                   alt={photo.alt}
                   width={800}
                   height={0}
-                  sizes="(max-width: 768px) 50vw, 467px"
+                  sizes="467px"
                   className="w-full h-auto block"
                   priority={i < 4}
                   style={{ display: 'block', width: '100%', height: 'auto' }}
@@ -109,7 +140,7 @@ export default function HomePage() {
       </div>
 
       {/* ── View all link ── */}
-      <div className="px-9 py-8 border-t" style={{ borderColor: '#e5e5e5' }}>
+      <div className="px-6 md:px-9 py-8 border-t" style={{ borderColor: '#e5e5e5' }}>
         <Link
           href="/gallery"
           className="text-[9px] tracking-[.2em] uppercase transition-colors duration-200"
