@@ -4,13 +4,14 @@ export interface SeriesConfig {
 
 export const seriesConfig: Record<string, SeriesConfig> = {
   'Architecture': { visible: true },
+  'Urban Extracts': { visible: true },
   'Street': { visible: true },
   'Endless Pane': { visible: true },
   'Still Life': { visible: true },
+  'Self-Portraits': { visible: true },
   'Abstract': { visible: true },
   'Around the Corner': { visible: true },
   'Clasped': { visible: true },
-  'Self-Portraits': { visible: true },
 }
 
 export function getVisibleSeries(): string[] {
@@ -21,8 +22,8 @@ export function getVisibleSeries(): string[] {
 
 // Slugs of featured photos in homepage display order
 export const featuredOrder: string[] = [
-  'colors-of-cdmx-001-2025',
   'colors-of-cdmx-002-2025',
+  'colors-of-cdmx-001-2025',
   'colors-of-cdmx-003-2025',
   'clasped-001-2026',
   'clasped-002-2026',
@@ -32,13 +33,17 @@ export const featuredOrder: string[] = [
   'atc-005-2025',
   'moons-edge',
   'crimson-bridge-2026',
-  'panning-cyclist-2025',
+  'cycling-001-2025',
   'urban-crown-shyness',
-  'alwyn-court-2025',
   'drops-from-above-2025',
+  'alwyn-court-2025',
   'budapest-001-2025',
   'sp002-2025',
   'still-life-001-2026',
+  'ep-001-2025',
+  'ep-002-2026',
+  'ep-005-2026',
+  'pigeon-holed-2026',
 ]
 
 // Per-series photo display order
@@ -71,5 +76,16 @@ export const seriesOrder: Record<string, string[]> = {
     'clasped-001-2026',
     'clasped-002-2026',
     'clasped-003-2026',
+  ],
+  'Still Life': [
+    'still-life-001-2026',
+    'still-life-002-2025',
+    'still-life-003-2025',
+    'reflect-amouge-2026',
+    'the-o-2026',
+    'anua-pomegranate-2026',
+    'still-life-004-2026',
+    'still-life-005-2026',
+    'still-life-006-2026',
   ],
 }

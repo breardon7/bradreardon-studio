@@ -387,6 +387,38 @@ function startServer() {
     }
   })
 
+  // POST /api/series/reorder — rewrite SERIES array order in photos.ts + seriesConfig key order in series.ts
+  server.post('/api/series/reorder', (req, res) => {
+    const { order } = req.body
+    if (!Array.isArray(order)) return res.status(400).json({ error: 'Missing order array' })
+    try {
+      // Rewrite SERIES array in photos.ts
+      let content = fs.readFileSync(PHOTOS_TS, 'utf8')
+      const match = content.match(/export const SERIES\s*=\s*\[([\s\S]*?)\]\s*as const/)
+      if (!match) return res.status(500).json({ error: 'Could not find SERIES array' })
+      const newEntries = order.map(s => "  '" + s + "',").join('\n')
+      const newBlock = 'export const SERIES = [\n' + newEntries + '\n] as const'
+      content = content.replace(match[0], newBlock)
+      fs.writeFileSync(PHOTOS_TS, content, 'utf8')
+
+      // Rewrite seriesConfig key order in series.ts (preserving values)
+      const config = readSeriesConfig()
+      const featuredOrd = readFeaturedOrder()
+      const seriesOrd = readSeriesOrder()
+      const reorderedConfig = {}
+      order.forEach(name => {
+        reorderedConfig[name] = config[name] || { visible: true }
+      })
+      // preserve any keys not in order array
+      Object.keys(config).forEach(k => { if (!order.includes(k)) reorderedConfig[k] = config[k] })
+      writeSeriesTS(reorderedConfig, featuredOrd, seriesOrd)
+
+      res.json({ success: true })
+    } catch (e) {
+      res.status(500).json({ error: e.message })
+    }
+  })
+
   // POST /api/series/delete — remove series from SERIES array + seriesConfig
   // Blocked if any photos still belong to this series
   server.post('/api/series/delete', (req, res) => {

@@ -126,7 +126,7 @@ export const prints: PrintListing[] = [
     ],
   },
   {
-    slug: 'panning-cyclist-2025',
+    slug: 'crimson-bridge-2026',
     visible: true,
     priceLine: '',
     medium: '',
@@ -138,7 +138,19 @@ export const prints: PrintListing[] = [
     ],
   },
   {
-    slug: 'crimson-bridge-2026',
+    slug: 'pigeon-holed-2026',
+    visible: true,
+    priceLine: '',
+    medium: '',
+    paper: '',
+    finish: '',
+    notes: '',
+    sizes: [
+
+    ],
+  },
+  {
+    slug: 'cycling-001-2025',
     visible: true,
     priceLine: '',
     medium: '',

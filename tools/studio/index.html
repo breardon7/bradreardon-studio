@@ -308,8 +308,13 @@
     .series-row {
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 0; border-bottom: 1px solid var(--border);
+      user-select: none;
     }
     .series-row:first-child { border-top: 1px solid var(--border); }
+    .series-row.drag-over { background: var(--card); }
+    .series-row.dragging { opacity: 0.4; }
+    .series-drag-handle { color: var(--dim); font-size: 14px; flex-shrink: 0; cursor: grab; margin-right: 14px; line-height: 1; }
+    .series-drag-handle:active { cursor: grabbing; }
     .series-name { font-size: 15px; font-weight: 300; color: var(--text); flex: 1; }
     .series-name-input {
       font-family: 'Jost', sans-serif; font-weight: 300; font-size: 15px;
@@ -491,7 +496,12 @@
 <!-- SERIES -->
 <div class="page" id="page-series">
   <div class="series-page">
-    <p class="section-label" style="margin-bottom:24px;">Manage series</p>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:24px;">
+      <p class="section-label" style="margin:0;">Manage series — drag to reorder nav</p>
+      <button class="submit-btn" id="saveSeriesOrderBtn">
+        <span class="line"></span><span>Save nav order</span>
+      </button>
+    </div>
     <div class="series-list" id="seriesList"></div>
     <div class="add-series-row">
       <input class="add-series-input" id="newSeriesInput" type="text" placeholder="New series name" />
@@ -952,21 +962,55 @@ document.getElementById('saveOrderBtn').addEventListener('click', async function
 
 // ══ SERIES tab ════════════════════════════════════════════════════════════════
 var seriesList = document.getElementById('seriesList');
+var seriesDragSrc = null;
+var seriesOrder = [];
 
 function loadSeriesList() {
   fetch('http://localhost:3001/api/series')
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      seriesList.innerHTML = '';
-      data.series.forEach(function(name) {
-        var visible = data.config[name] ? data.config[name].visible : true;
-        seriesList.appendChild(makeSeriesRow(name, visible));
-      });
+      seriesOrder = data.series.slice();
+      renderSeriesList(data.series, data.config);
     });
+}
+
+function renderSeriesList(names, config) {
+  seriesList.innerHTML = '';
+  seriesList._config = config || {};
+  names.forEach(function(name) {
+    var visible = seriesList._config[name] ? seriesList._config[name].visible : true;
+    seriesList.appendChild(makeSeriesRow(name, visible));
+  });
 }
 
 function makeSeriesRow(name, visible) {
   var row = document.createElement('div'); row.className = 'series-row'; row.dataset.name = name;
+  row.draggable = true;
+
+  // drag handle
+  var handle = document.createElement('span'); handle.className = 'series-drag-handle'; handle.textContent = '\u2837';
+  row.appendChild(handle);
+
+  row.addEventListener('dragstart', function(e) {
+    seriesDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
+  });
+  row.addEventListener('dragend', function() {
+    row.classList.remove('dragging');
+    seriesList.querySelectorAll('.series-row').forEach(function(el) { el.classList.remove('drag-over'); });
+  });
+  row.addEventListener('dragover', function(e) {
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+    seriesList.querySelectorAll('.series-row').forEach(function(el) { el.classList.remove('drag-over'); });
+    if (row !== seriesDragSrc) row.classList.add('drag-over');
+  });
+  row.addEventListener('drop', function(e) {
+    e.preventDefault(); if (!seriesDragSrc || seriesDragSrc === row) return;
+    var fi = seriesOrder.indexOf(seriesDragSrc.dataset.name);
+    var ti = seriesOrder.indexOf(row.dataset.name);
+    var moved = seriesOrder.splice(fi, 1)[0]; seriesOrder.splice(ti, 0, moved);
+    renderSeriesList(seriesOrder, seriesList._config);
+  });
+
   var nameEl = document.createElement('span'); nameEl.className = 'series-name'; nameEl.textContent = name;
   if (!visible) nameEl.style.color = 'var(--dim)';
   var actions = document.createElement('div'); actions.className = 'series-actions';
@@ -1031,6 +1075,20 @@ function makeSeriesRow(name, visible) {
   row.appendChild(nameEl); row.appendChild(actions);
   return row;
 }
+
+document.getElementById('saveSeriesOrderBtn').addEventListener('click', async function() {
+  var btn = document.getElementById('saveSeriesOrderBtn');
+  btn.disabled = true; btn.querySelector('span:last-child').textContent = 'Saving...';
+  try {
+    var res = await fetch('http://localhost:3001/api/series/reorder', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: seriesOrder }),
+    });
+    var data = await res.json(); if (!res.ok) throw new Error(data.error);
+    showToast('Nav order saved', false); loadSeriesDropdown();
+  } catch(e) { showToast('Error: ' + e.message, true); }
+  btn.disabled = false; btn.querySelector('span:last-child').textContent = 'Save nav order';
+});
 
 document.getElementById('addSeriesBtn').addEventListener('click', async function() {
   var name = document.getElementById('newSeriesInput').value.trim(); if (!name) return;
