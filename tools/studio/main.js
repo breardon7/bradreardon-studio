@@ -103,12 +103,19 @@ function ensureSeriesInConfig(name) {
 function readAllPhotos() {
   const content = fs.readFileSync(PHOTOS_TS, 'utf8')
   const results = []
-  const re = /\{\s*\n([\s\S]*?)\s*\},/g
+  // Match array up to closing ] on its own line (stops before helper functions)
+  const arrayMatch = content.match(/export const photos[^=]*=\s*\[([\s\S]*?)\n\]/)
+  if (!arrayMatch) return results
+  const arrayContent = arrayMatch[1]
+  const re = /\{([\s\S]*?)\}/g
   let m
-  while ((m = re.exec(content)) !== null) {
+  while ((m = re.exec(arrayContent)) !== null) {
     const block = m[1]
+    // Try double-quoted first (handles apostrophes in values), fall back to single-quoted
     const get = (key) => {
-      const km = block.match(new RegExp(key + ":\\s*'([^']*)'"))
+      let km = block.match(new RegExp(key + ':\\s*"([^"]*)"'))
+      if (km) return km[1]
+      km = block.match(new RegExp(key + ":\\s*'([^']*)'"))
       return km ? km[1] : null
     }
     const getNum = (key) => {
@@ -263,14 +270,52 @@ function readPrints() {
   if (!fs.existsSync(PRINTS_TS)) return []
   const content = fs.readFileSync(PRINTS_TS, 'utf8')
   const results = []
-  const re = /\{\s*\n([\s\S]*?)\n\s*\}/g
+
+  // Find the prints array content — stop at ] on its own line
+  const arrayMatch = content.match(/export const prints[^=]*=\s*\[([\s\S]*?)\n\]/)
+  if (!arrayMatch) return results
+  const arrayContent = arrayMatch[1]
+
+  // Match each top-level listing object — greedy match of sizes sub-array included
+  const listingRe = /\{([\s\S]*?sizes:\s*\[[\s\S]*?\][\s\S]*?)\}/g
   let m
-  while ((m = re.exec(content)) !== null) {
-    const block = m[0]
-    try {
-      const obj = Function('"use strict"; return (' + block + ')')()
-      if (obj && obj.slug) results.push(obj)
-    } catch (e) {}
+  while ((m = listingRe.exec(arrayContent)) !== null) {
+    const block = m[1]
+
+    const get = (key) => {
+      const km = block.match(new RegExp(key + ":\\s*'([^']*)'"))
+      return km ? km[1] : ''
+    }
+    const getBool = (key) => {
+      const km = block.match(new RegExp(key + ':\\s*(true|false)'))
+      return km ? km[1] === 'true' : false
+    }
+
+    const slug = get('slug')
+    if (!slug) continue
+
+    // Parse sizes array
+    const sizes = []
+    const sizesMatch = block.match(/sizes:\s*\[([\s\S]*?)\]/)
+    if (sizesMatch) {
+      const sizesBlock = sizesMatch[1]
+      const sizeRe = /\{([\s\S]*?)\}/g
+      let sm
+      while ((sm = sizeRe.exec(sizesBlock)) !== null) {
+        const sb = sm[1]
+        const sget = (key) => { const km = sb.match(new RegExp(key + ":\\s*'([^']*?)'")); return km ? km[1] : '' }
+        const sgetNum = (key) => { const km = sb.match(new RegExp(key + ':\\s*(\\d+)')); return km ? parseInt(km[1]) : null }
+        const sgetBool = (key) => { const km = sb.match(new RegExp(key + ':\\s*(true|false)')); return km ? km[1] === 'true' : true }
+        const label = sget('label')
+        if (!label && sgetNum('price') === null) continue
+        const size = { label, price: sgetNum('price') || 0, available: sgetBool('available') }
+        const edition = sgetNum('edition')
+        if (edition) size.edition = edition
+        sizes.push(size)
+      }
+    }
+
+    results.push({ slug, visible: getBool('visible'), priceLine: get('priceLine'), medium: get('medium'), paper: get('paper'), finish: get('finish'), notes: get('notes'), sizes })
   }
   return results
 }
@@ -381,38 +426,6 @@ function startServer() {
       const seriesOrd = readSeriesOrder()
       config[name] = { visible }
       writeSeriesTS(config, featuredOrd, seriesOrd)
-      res.json({ success: true })
-    } catch (e) {
-      res.status(500).json({ error: e.message })
-    }
-  })
-
-  // POST /api/series/reorder — rewrite SERIES array order in photos.ts + seriesConfig key order in series.ts
-  server.post('/api/series/reorder', (req, res) => {
-    const { order } = req.body
-    if (!Array.isArray(order)) return res.status(400).json({ error: 'Missing order array' })
-    try {
-      // Rewrite SERIES array in photos.ts
-      let content = fs.readFileSync(PHOTOS_TS, 'utf8')
-      const match = content.match(/export const SERIES\s*=\s*\[([\s\S]*?)\]\s*as const/)
-      if (!match) return res.status(500).json({ error: 'Could not find SERIES array' })
-      const newEntries = order.map(s => "  '" + s + "',").join('\n')
-      const newBlock = 'export const SERIES = [\n' + newEntries + '\n] as const'
-      content = content.replace(match[0], newBlock)
-      fs.writeFileSync(PHOTOS_TS, content, 'utf8')
-
-      // Rewrite seriesConfig key order in series.ts (preserving values)
-      const config = readSeriesConfig()
-      const featuredOrd = readFeaturedOrder()
-      const seriesOrd = readSeriesOrder()
-      const reorderedConfig = {}
-      order.forEach(name => {
-        reorderedConfig[name] = config[name] || { visible: true }
-      })
-      // preserve any keys not in order array
-      Object.keys(config).forEach(k => { if (!order.includes(k)) reorderedConfig[k] = config[k] })
-      writeSeriesTS(reorderedConfig, featuredOrd, seriesOrd)
-
       res.json({ success: true })
     } catch (e) {
       res.status(500).json({ error: e.message })
@@ -531,6 +544,8 @@ function startServer() {
   server.post('/api/photos', (req, res) => {
     const { slug, src, alt, title, series, aspectRatio, year, featured, cover } = req.body
     if (!slug || !src || !title || !series) return res.status(400).json({ error: 'Missing required fields' })
+    const existingPhotos = readAllPhotos()
+    if (existingPhotos.find(p => p.slug === slug)) return res.status(400).json({ error: 'Slug already exists: ' + slug })
     const entry = '  {\n' +
       "    slug: '" + slug + "',\n" +
       "    src: '" + src + "',\n" +
@@ -673,6 +688,40 @@ function startServer() {
       const listings = readPrints().filter(l => l.slug !== slug)
       writePrints(listings)
       res.json({ success: true })
+    } catch (e) { res.status(500).json({ error: e.message }) }
+  })
+
+  // GET /api/image-dimensions?src=... — return pixel width/height of an image file
+  server.get('/api/image-dimensions', (req, res) => {
+    const src = req.query.src
+    if (!src) return res.status(400).json({ error: 'Missing src' })
+    const filePath = path.join(PROJECT_ROOT, 'public', src)
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Not found' })
+    try {
+      const buf = fs.readFileSync(filePath)
+      // Parse dimensions from image header bytes (JPEG/PNG only, no deps needed)
+      let w = null, h = null
+      if (buf[0] === 0xFF && buf[1] === 0xD8) {
+        // JPEG — scan for SOF marker
+        let i = 2
+        while (i < buf.length - 8) {
+          if (buf[i] === 0xFF) {
+            const marker = buf[i + 1]
+            if (marker >= 0xC0 && marker <= 0xC3) {
+              h = (buf[i + 5] << 8) | buf[i + 6]
+              w = (buf[i + 7] << 8) | buf[i + 8]
+              break
+            }
+            i += 2 + ((buf[i + 2] << 8) | buf[i + 3])
+          } else { i++ }
+        }
+      } else if (buf[0] === 0x89 && buf[1] === 0x50) {
+        // PNG
+        w = (buf[16] << 24) | (buf[17] << 16) | (buf[18] << 8) | buf[19]
+        h = (buf[20] << 24) | (buf[21] << 16) | (buf[22] << 8) | buf[23]
+      }
+      if (w && h) res.json({ width: w, height: h, ratio: (w / h).toFixed(4) })
+      else res.status(422).json({ error: 'Could not read dimensions (unsupported format)' })
     } catch (e) { res.status(500).json({ error: e.message }) }
   })
 

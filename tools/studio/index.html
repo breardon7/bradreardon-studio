@@ -308,13 +308,8 @@
     .series-row {
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 0; border-bottom: 1px solid var(--border);
-      user-select: none;
     }
     .series-row:first-child { border-top: 1px solid var(--border); }
-    .series-row.drag-over { background: var(--card); }
-    .series-row.dragging { opacity: 0.4; }
-    .series-drag-handle { color: var(--dim); font-size: 14px; flex-shrink: 0; cursor: grab; margin-right: 14px; line-height: 1; }
-    .series-drag-handle:active { cursor: grabbing; }
     .series-name { font-size: 15px; font-weight: 300; color: var(--text); flex: 1; }
     .series-name-input {
       font-family: 'Jost', sans-serif; font-weight: 300; font-size: 15px;
@@ -428,11 +423,13 @@
       <div class="field">
         <label>Aspect ratio</label>
         <input type="text" id="aspectRatio" placeholder="2/3" />
+        <p id="dimsNote" style="font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.06em;"></p>
       </div>
       <div class="field">
         <label>Year</label>
         <input type="number" id="year" placeholder="2024" value="2024" />
       </div>
+      <p style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:20px;line-height:1.7;">Export spec: sRGB · 2400px long edge · JPG q85</p>
       <div class="rule"></div>
       <div class="checks">
         <label class="check-item">
@@ -462,6 +459,7 @@
     <div class="photos-list-panel">
       <div class="photos-filter-bar">
         <select id="photosSeriesFilter"><option value="">All series</option></select>
+        <input id="photosSearch" type="text" placeholder="Search..." style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);font-family:Jost,sans-serif;font-weight:300;font-size:12px;color:var(--text);padding:4px 0;outline:none;max-width:120px;" />
         <div class="view-toggle">
           <button class="view-btn active" id="viewEditBtn">Edit</button>
           <button class="view-btn" id="viewOrderBtn">Order</button>
@@ -497,9 +495,9 @@
 <div class="page" id="page-series">
   <div class="series-page">
     <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:24px;">
-      <p class="section-label" style="margin:0;">Manage series — drag to reorder nav</p>
+      <p class="section-label" style="margin:0;">Manage series</p>
       <button class="submit-btn" id="saveSeriesOrderBtn">
-        <span class="line"></span><span>Save nav order</span>
+        <span class="line"></span><span>Save order</span>
       </button>
     </div>
     <div class="series-list" id="seriesList"></div>
@@ -565,18 +563,32 @@
 <input type="file" id="fileInput" accept="image/*" style="display:none" />
 
 <script>
-// helpers
+// ── helpers ───────────────────────────────────────────────────────────────────
 var toast = document.getElementById('toast');
+var toastTimer = null;
 function showToast(msg, isError) {
   toast.textContent = msg;
   toast.className = 'toast show' + (isError ? ' error' : '');
-  setTimeout(function() { toast.className = 'toast'; }, 3200);
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { toast.className = 'toast'; }, 3200);
 }
 function imgSrc(src) {
   return 'http://localhost:3001/photo-image?src=' + encodeURIComponent(src);
 }
 
-// tab routing
+// ── Unsaved changes tracking ──────────────────────────────────────────────────
+var hasUnsavedChanges = false;
+function markDirty() { hasUnsavedChanges = true; }
+function markClean() { hasUnsavedChanges = false; }
+
+window.addEventListener('beforeunload', function(e) {
+  if (hasUnsavedChanges) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// ── Tab routing ───────────────────────────────────────────────────────────────
 var tabs = document.querySelectorAll('.tab');
 var pages = document.querySelectorAll('.page');
 tabs.forEach(function(tab) {
@@ -592,7 +604,7 @@ tabs.forEach(function(tab) {
   });
 });
 
-// shared series dropdown
+// ── Shared series dropdown ────────────────────────────────────────────────────
 function loadSeriesDropdown() {
   return fetch('http://localhost:3001/api/series')
     .then(function(r) { return r.json(); })
@@ -623,6 +635,10 @@ var aspectEl = document.getElementById('aspectRatio');
 var yearEl = document.getElementById('year');
 var seriesEl = document.getElementById('series');
 var uploadedFile = null;
+var uploadedFileDims = null; // { width, height } from actual file
+
+// Export spec reminder shown below aspect ratio field
+
 
 function toSlug(str) {
   var year = yearEl.value || new Date().getFullYear();
@@ -634,18 +650,20 @@ yearEl.addEventListener('input', function() { if (titleEl.value) { var s = toSlu
 function handleFile(file) {
   if (!file || !file.type.startsWith('image/')) return;
   uploadedFile = file;
+  uploadedFileDims = null;
   var old = dropZone.querySelector('img'); if (old) old.remove();
   var img = document.createElement('img'); img.src = URL.createObjectURL(file);
   dropZone.appendChild(img); dropZone.classList.add('has-image');
   var sizer = new Image();
   sizer.onload = function() {
     var w = sizer.naturalWidth, h = sizer.naturalHeight, r = w / h;
-    if (Math.abs(r - 2/3) < 0.05) aspectEl.value = '2/3';
-    else if (Math.abs(r - 3/4) < 0.05) aspectEl.value = '3/4';
-    else if (Math.abs(r - 1) < 0.05) aspectEl.value = '1';
-    else if (Math.abs(r - 3/2) < 0.05) aspectEl.value = '3/2';
-    else if (Math.abs(r - 4/3) < 0.05) aspectEl.value = '4/3';
-    else aspectEl.value = w + '/' + h;
+    uploadedFileDims = { width: w, height: h };
+    // Set aspect ratio — use exact pixel ratio, not snapped
+    aspectEl.value = w + '/' + h;
+    // Show actual dimensions next to field
+    var dimsNote = document.getElementById('dimsNote');
+    if (dimsNote) dimsNote.textContent = w + ' \u00d7 ' + h + 'px';
+    checkReady();
   };
   sizer.src = URL.createObjectURL(file);
   checkReady();
@@ -666,6 +684,7 @@ seriesEl.addEventListener('change', checkReady);
 seriesEl.addEventListener('input', checkReady);
 
 submitBtn.addEventListener('click', async function() {
+  var slugVal = slugEl.value;
   submitBtn.disabled = true;
   submitBtn.querySelector('span:last-child').textContent = 'Uploading...';
   try {
@@ -675,14 +694,15 @@ submitBtn.addEventListener('click', async function() {
     var pr = await fetch('http://localhost:3001/api/photos', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        slug: slugEl.value, src: upData.src, alt: altEl.value || titleEl.value,
+        slug: slugVal, src: upData.src, alt: altEl.value || titleEl.value,
         title: titleEl.value, series: seriesEl.value, aspectRatio: aspectEl.value || '2/3',
         year: parseInt(yearEl.value) || new Date().getFullYear(),
         cover: document.getElementById('cover').checked,
         featured: document.getElementById('featured').checked,
       }),
     });
-    if (!pr.ok) throw new Error('Failed to write photo');
+    var prData = await pr.json();
+    if (!pr.ok) throw new Error(prData.error || 'Failed to write photo');
     showToast('Photo added', false); loadSeriesDropdown(); resetForm();
   } catch(e) {
     showToast('Error: ' + e.message, true);
@@ -692,11 +712,12 @@ submitBtn.addEventListener('click', async function() {
 });
 
 function resetForm() {
-  uploadedFile = null;
+  uploadedFile = null; uploadedFileDims = null;
   var img = dropZone.querySelector('img'); if (img) img.remove();
   dropZone.classList.remove('has-image');
   titleEl.value = ''; slugEl.value = ''; slugPreview.textContent = '';
   altEl.value = ''; aspectEl.value = '';
+  var dimsNote = document.getElementById('dimsNote'); if (dimsNote) dimsNote.textContent = '';
   yearEl.value = new Date().getFullYear();
   document.getElementById('cover').checked = false;
   document.getElementById('featured').checked = false;
@@ -713,6 +734,7 @@ var orderView = document.getElementById('orderView');
 var allPhotos = [];
 var selectedSlug = null;
 var currentView = 'edit';
+var searchInput = document.getElementById('photosSearch');
 
 document.getElementById('viewEditBtn').addEventListener('click', function() {
   currentView = 'edit';
@@ -732,31 +754,51 @@ photosSeriesFilter.addEventListener('change', function() {
   renderPhotosList();
   if (currentView === 'order') renderOrderView();
 });
+if (searchInput) searchInput.addEventListener('input', renderPhotosList);
 
 function loadPhotosList() {
   fetch('http://localhost:3001/api/photos')
     .then(function(r) { return r.json(); })
-    .then(function(data) { allPhotos = data.photos; renderPhotosList(); });
+    .then(function(data) {
+      allPhotos = data.photos;
+      // Update series count badges
+      updateSeriesCounts(data.photos);
+      renderPhotosList();
+    });
+}
+
+function updateSeriesCounts(photos) {
+  var counts = {};
+  photos.forEach(function(p) { counts[p.series] = (counts[p.series] || 0) + 1; });
+  window._seriesCounts = counts;
 }
 
 function renderPhotosList() {
   var filter = photosSeriesFilter.value;
-  var filtered = filter ? allPhotos.filter(function(p) { return p.series === filter; }) : allPhotos;
+  var search = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  var filtered = allPhotos.filter(function(p) {
+    var matchSeries = !filter || p.series === filter;
+    var matchSearch = !search || (p.title || '').toLowerCase().includes(search) || p.slug.toLowerCase().includes(search);
+    return matchSeries && matchSearch;
+  });
+
   photosList.innerHTML = '';
   if (!filtered.length) {
     var empty = document.createElement('div');
     empty.style.cssText = 'padding:24px 20px;font-size:12px;color:#ccc;letter-spacing:.1em;text-transform:uppercase;';
-    empty.textContent = 'No photos'; photosList.appendChild(empty); return;
+    empty.textContent = search ? 'No results' : 'No photos';
+    photosList.appendChild(empty); return;
   }
   filtered.forEach(function(photo) {
     var item = document.createElement('div');
     item.className = 'photo-list-item' + (photo.slug === selectedSlug ? ' selected' : '');
+    if (photo.hidden) item.style.opacity = '0.5';
     item.dataset.slug = photo.slug;
     var thumb = document.createElement('img'); thumb.className = 'photo-thumb';
     thumb.src = imgSrc(photo.src); thumb.onerror = function() { thumb.style.background = '#eee'; };
     var info = document.createElement('div'); info.className = 'photo-list-info';
     var t = document.createElement('div'); t.className = 'photo-list-title'; t.textContent = photo.title || photo.slug;
-    var m = document.createElement('div'); m.className = 'photo-list-meta'; m.textContent = photo.series + ' · ' + (photo.year || '');
+    var m = document.createElement('div'); m.className = 'photo-list-meta'; m.textContent = photo.series + ' \u00b7 ' + (photo.year || '');
     info.appendChild(t); info.appendChild(m);
     var badges = document.createElement('div'); badges.className = 'photo-list-badges';
     if (photo.cover) { var b = document.createElement('span'); b.className = 'badge active'; b.textContent = 'C'; badges.appendChild(b); }
@@ -770,6 +812,10 @@ function renderPhotosList() {
 }
 
 function openPhotoEdit(slug) {
+  if (hasUnsavedChanges) {
+    if (!confirm('You have unsaved changes. Discard them?')) return;
+    markClean();
+  }
   selectedSlug = slug;
   document.querySelectorAll('.photo-list-item').forEach(function(el) {
     el.classList.toggle('selected', el.dataset.slug === slug);
@@ -782,19 +828,50 @@ function openPhotoEdit(slug) {
 
 function renderEditPanel(photo, seriesList) {
   photosEditPanel.innerHTML = '';
+  markClean();
 
+  // thumbnail — click to open lightbox
   var thumbWrap = document.createElement('div'); thumbWrap.className = 'edit-thumb-wrap';
+  thumbWrap.style.cursor = 'zoom-in';
   var thumb = document.createElement('img'); thumb.src = imgSrc(photo.src);
   thumb.onerror = function() { thumbWrap.style.display = 'none'; };
-  thumbWrap.appendChild(thumb); photosEditPanel.appendChild(thumbWrap);
+  thumbWrap.appendChild(thumb);
+  thumbWrap.addEventListener('click', function() { openImageLightbox(imgSrc(photo.src), photo.title); });
+  photosEditPanel.appendChild(thumbWrap);
 
+  // image dimensions display
+  var dimsEl = document.createElement('p');
+  dimsEl.style.cssText = 'font-size:11px;color:var(--muted);letter-spacing:.08em;margin-bottom:20px;margin-top:-16px;';
+  dimsEl.textContent = 'Loading dimensions...';
+  photosEditPanel.appendChild(dimsEl);
+  fetch('http://localhost:3001/api/image-dimensions?src=' + encodeURIComponent(photo.src))
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.width) {
+        var declared = photo.aspectRatio || '';
+        dimsEl.textContent = d.width + ' \u00d7 ' + d.height + 'px — ratio ' + d.ratio;
+        // warn if declared ratio looks off
+        var parts = declared.split('/');
+        if (parts.length === 2) {
+          var declaredRatio = (parseFloat(parts[0]) / parseFloat(parts[1])).toFixed(4);
+          if (Math.abs(parseFloat(d.ratio) - parseFloat(declaredRatio)) > 0.05) {
+            dimsEl.textContent += ' \u26a0 declared ' + declared + ' may not match';
+            dimsEl.style.color = '#c0392b';
+          }
+        }
+      } else { dimsEl.textContent = ''; }
+    })
+    .catch(function() { dimsEl.textContent = ''; });
+
+  // header row
   var topRow = document.createElement('div');
   topRow.style.cssText = 'display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;';
   var lbl = document.createElement('p'); lbl.className = 'section-label'; lbl.style.marginBottom = '0'; lbl.textContent = 'Edit photo';
   var deleteBtn = document.createElement('button'); deleteBtn.className = 'delete-btn'; deleteBtn.textContent = 'Delete';
+  var deleteUndo = null; // for undo
   deleteBtn.addEventListener('click', function() {
     if (deleteBtn.dataset.confirm === 'true') {
-      doDeletePhoto(photo.slug);
+      doDeletePhoto(photo.slug, photo.src);
     } else {
       deleteBtn.textContent = 'Sure? This is permanent';
       deleteBtn.dataset.confirm = 'true'; deleteBtn.classList.add('confirming');
@@ -815,6 +892,8 @@ function renderEditPanel(photo, seriesList) {
     } else {
       input = document.createElement('input'); input.type = type || 'text'; input.value = value || '';
     }
+    input.addEventListener('input', markDirty);
+    input.addEventListener('change', markDirty);
     wrap.appendChild(input); return { wrap: wrap, input: input };
   }
 
@@ -842,12 +921,11 @@ function renderEditPanel(photo, seriesList) {
         });
         var data = await res.json(); if (!res.ok) throw new Error(data.error);
         var p = allPhotos.find(function(x) { return x.slug === photo.slug; }); if (p) p[field] = inp.checked;
-        // auto-create or remove prints listing when print toggle changes
         if (field === 'print') {
           if (inp.checked) {
             await fetch('http://localhost:3001/api/prints/' + encodeURIComponent(photo.slug), {
               method: 'PUT', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ slug: photo.slug, visible: false, medium: '', paper: '', finish: '', notes: '', sizes: [] }),
+              body: JSON.stringify({ slug: photo.slug, visible: false, priceLine: '', medium: '', paper: '', finish: '', notes: '', sizes: [] }),
             });
           } else {
             await fetch('http://localhost:3001/api/prints/' + encodeURIComponent(photo.slug), { method: 'DELETE' });
@@ -865,6 +943,44 @@ function renderEditPanel(photo, seriesList) {
   checks.appendChild(makeCheck('Print', photo.print, 'print'));
   photosEditPanel.appendChild(checks);
 
+  // bulk actions row
+  var bulkRow = document.createElement('div');
+  bulkRow.style.cssText = 'display:flex;gap:16px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);flex-wrap:wrap;';
+  var bulkLabel = document.createElement('span');
+  bulkLabel.style.cssText = 'font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);align-self:center;flex-shrink:0;';
+  bulkLabel.textContent = 'Series:';
+
+  function makeBulkBtn(label, action) {
+    var btn = document.createElement('button'); btn.className = 'action-btn';
+    btn.style.fontSize = '10px';
+    btn.textContent = label;
+    btn.addEventListener('click', async function() {
+      var seriesName = photo.series;
+      var seriesPhotos = allPhotos.filter(function(p) { return p.series === seriesName; });
+      btn.textContent = 'Working...';
+      for (var i = 0; i < seriesPhotos.length; i++) {
+        var p = seriesPhotos[i];
+        await fetch('http://localhost:3001/api/photos/' + encodeURIComponent(p.slug), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(action),
+        });
+        var local = allPhotos.find(function(x) { return x.slug === p.slug; });
+        if (local) local[action.field] = action.value;
+      }
+      showToast('Done \u2014 ' + seriesPhotos.length + ' photos updated', false);
+      btn.textContent = label;
+      renderPhotosList();
+    });
+    return btn;
+  }
+
+  bulkRow.appendChild(bulkLabel);
+  bulkRow.appendChild(makeBulkBtn('Hide all', { field: 'hidden', value: true }));
+  bulkRow.appendChild(makeBulkBtn('Show all', { field: 'hidden', value: false }));
+  bulkRow.appendChild(makeBulkBtn('Feature all', { field: 'featured', value: true }));
+  bulkRow.appendChild(makeBulkBtn('Unfeature all', { field: 'featured', value: false }));
+  photosEditPanel.appendChild(bulkRow);
+
   var saveRow = document.createElement('div'); saveRow.className = 'submit-row';
   var saveBtn = document.createElement('button'); saveBtn.className = 'submit-btn';
   saveBtn.innerHTML = '<span class="line"></span><span>Save changes</span>';
@@ -878,6 +994,7 @@ function renderEditPanel(photo, seriesList) {
       var data = await res.json(); if (!res.ok) throw new Error(data.error);
       var p = allPhotos.find(function(x) { return x.slug === photo.slug; });
       if (p) { p.title = fTitle.input.value; p.alt = fAlt.input.value; p.series = fSeries.input.value; p.aspectRatio = fRatio.input.value; p.year = parseInt(fYear.input.value); }
+      markClean();
       showToast('Saved', false); renderPhotosList();
     } catch(e) { showToast('Error: ' + e.message, true); }
     saveBtn.disabled = false; saveBtn.querySelector('span:last-child').textContent = 'Save changes';
@@ -885,16 +1002,37 @@ function renderEditPanel(photo, seriesList) {
   saveRow.appendChild(saveBtn); photosEditPanel.appendChild(saveRow);
 }
 
-async function doDeletePhoto(slug) {
+async function doDeletePhoto(slug, src) {
+  // Soft-delete: stash data for undo before calling API
+  var photoData = allPhotos.find(function(p) { return p.slug === slug; });
   try {
     var res = await fetch('http://localhost:3001/api/photos/' + encodeURIComponent(slug), { method: 'DELETE' });
     var data = await res.json(); if (!res.ok) throw new Error(data.error);
-    showToast('Photo deleted', false);
-    selectedSlug = null;
+    markClean();
     allPhotos = allPhotos.filter(function(p) { return p.slug !== slug; });
+    selectedSlug = null;
     photosEditPanel.innerHTML = '<div class="edit-empty">Select a photo to edit</div>';
     renderPhotosList();
+    showToast('Deleted — image file removed from disk', false);
   } catch(e) { showToast('Error: ' + e.message, true); }
+}
+
+// ── Image lightbox (for thumbnail click) ─────────────────────────────────────
+function openImageLightbox(src, title) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+  var img = document.createElement('img');
+  img.src = src;
+  img.style.cssText = 'max-width:90vw;max-height:90vh;object-fit:contain;display:block;';
+  overlay.appendChild(img);
+  if (title) {
+    var cap = document.createElement('p');
+    cap.style.cssText = 'position:absolute;bottom:24px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.6);font-size:12px;letter-spacing:.18em;text-transform:uppercase;';
+    cap.textContent = title; overlay.appendChild(cap);
+  }
+  overlay.addEventListener('click', function() { document.body.removeChild(overlay); });
+  document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { if (document.body.contains(overlay)) document.body.removeChild(overlay); document.removeEventListener('keydown', esc); } });
+  document.body.appendChild(overlay);
 }
 
 // ── Order view ────────────────────────────────────────────────────────────────
@@ -910,7 +1048,7 @@ function renderOrderView() {
     orderSeriesLabel.textContent = 'Select a series to reorder';
     return;
   }
-  orderSeriesLabel.textContent = series + ' — gallery order';
+  orderSeriesLabel.textContent = series + ' \u2014 gallery order';
   fetch('http://localhost:3001/api/series-order/' + encodeURIComponent(series))
     .then(function(r) { return r.json(); })
     .then(function(data) { orderPhotos = data.photos; renderOrderList(); });
@@ -927,10 +1065,10 @@ function renderOrderList() {
     var info = document.createElement('div'); info.className = 'order-info';
     var t = document.createElement('div'); t.className = 'order-title'; t.textContent = photo.title || photo.slug;
     var m = document.createElement('div'); m.className = 'order-meta'; m.textContent = photo.year || '';
+    if (photo.hidden) m.textContent += ' \u00b7 hidden';
     info.appendChild(t); info.appendChild(m);
     var handle = document.createElement('span'); handle.className = 'drag-handle'; handle.textContent = '\u2837';
     item.appendChild(num); item.appendChild(thumb); item.appendChild(info); item.appendChild(handle);
-
     item.addEventListener('dragstart', function(e) { orderDragSrc = item; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
     item.addEventListener('dragend', function() { item.classList.remove('dragging'); document.querySelectorAll('.order-item').forEach(function(el) { el.classList.remove('drag-over'); }); });
     item.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; document.querySelectorAll('.order-item').forEach(function(el) { el.classList.remove('drag-over'); }); if (item !== orderDragSrc) item.classList.add('drag-over'); });
@@ -962,60 +1100,76 @@ document.getElementById('saveOrderBtn').addEventListener('click', async function
 
 // ══ SERIES tab ════════════════════════════════════════════════════════════════
 var seriesList = document.getElementById('seriesList');
-var seriesDragSrc = null;
 var seriesOrder = [];
+var seriesDragSrc = null;
+var seriesConfigCache = {};
 
 function loadSeriesList() {
   fetch('http://localhost:3001/api/series')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       seriesOrder = data.series.slice();
-      renderSeriesList(data.series, data.config);
+      seriesConfigCache = data.config || {};
+      renderSeriesList();
     });
 }
 
-function renderSeriesList(names, config) {
+function loadSeriesListFromOrder() {
   seriesList.innerHTML = '';
-  seriesList._config = config || {};
-  names.forEach(function(name) {
-    var visible = seriesList._config[name] ? seriesList._config[name].visible : true;
-    seriesList.appendChild(makeSeriesRow(name, visible));
+  seriesOrder.forEach(function(name) {
+    var visible = seriesConfigCache[name] ? seriesConfigCache[name].visible : true;
+    var count = (window._seriesCounts && window._seriesCounts[name]) || 0;
+    seriesList.appendChild(makeSeriesRow(name, visible, count));
   });
 }
 
-function makeSeriesRow(name, visible) {
-  var row = document.createElement('div'); row.className = 'series-row'; row.dataset.name = name;
-  row.draggable = true;
+function renderSeriesList() { loadSeriesListFromOrder(); }
 
-  // drag handle
+document.getElementById('saveSeriesOrderBtn').addEventListener('click', async function() {
+  var btn = document.getElementById('saveSeriesOrderBtn');
+  btn.disabled = true; btn.querySelector('span:last-child').textContent = 'Saving...';
+  try {
+    var res = await fetch('http://localhost:3001/api/series/reorder', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: seriesOrder }),
+    });
+    var data = await res.json(); if (!res.ok) throw new Error(data.error);
+    showToast('Series order saved', false); loadSeriesDropdown();
+  } catch(e) { showToast('Error: ' + e.message, true); }
+  btn.disabled = false; btn.querySelector('span:last-child').textContent = 'Save order';
+});
+
+function makeSeriesRow(name, visible, count) {
+  var row = document.createElement('div');
+  row.className = 'series-row'; row.dataset.name = name; row.draggable = true;
+  var nameEl = document.createElement('span'); nameEl.className = 'series-name'; nameEl.textContent = name;
+  if (!visible) nameEl.style.color = 'var(--dim)';
+
+  // photo count
+  if (count !== undefined) {
+    var countEl = document.createElement('span');
+    countEl.style.cssText = 'font-size:11px;color:var(--dim);letter-spacing:.08em;margin-left:10px;';
+    countEl.textContent = count + ' photo' + (count !== 1 ? 's' : '');
+    nameEl.appendChild(countEl);
+  }
+
+  var actions = document.createElement('div'); actions.className = 'series-actions';
   var handle = document.createElement('span'); handle.className = 'series-drag-handle'; handle.textContent = '\u2837';
-  row.appendChild(handle);
 
-  row.addEventListener('dragstart', function(e) {
-    seriesDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
-  });
-  row.addEventListener('dragend', function() {
-    row.classList.remove('dragging');
-    seriesList.querySelectorAll('.series-row').forEach(function(el) { el.classList.remove('drag-over'); });
-  });
-  row.addEventListener('dragover', function(e) {
-    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
-    seriesList.querySelectorAll('.series-row').forEach(function(el) { el.classList.remove('drag-over'); });
-    if (row !== seriesDragSrc) row.classList.add('drag-over');
-  });
+  actions.addEventListener('mousedown', function(e) { e.stopPropagation(); row.draggable = false; });
+  actions.addEventListener('mouseup', function() { setTimeout(function() { row.draggable = true; }, 0); });
+
+  row.addEventListener('dragstart', function(e) { seriesDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+  row.addEventListener('dragend', function() { row.classList.remove('dragging'); document.querySelectorAll('.series-row').forEach(function(el) { el.classList.remove('drag-over'); }); });
+  row.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; document.querySelectorAll('.series-row').forEach(function(el) { el.classList.remove('drag-over'); }); if (row !== seriesDragSrc) row.classList.add('drag-over'); });
   row.addEventListener('drop', function(e) {
     e.preventDefault(); if (!seriesDragSrc || seriesDragSrc === row) return;
     var fi = seriesOrder.indexOf(seriesDragSrc.dataset.name);
     var ti = seriesOrder.indexOf(row.dataset.name);
     var moved = seriesOrder.splice(fi, 1)[0]; seriesOrder.splice(ti, 0, moved);
-    renderSeriesList(seriesOrder, seriesList._config);
+    loadSeriesListFromOrder();
   });
 
-  var nameEl = document.createElement('span'); nameEl.className = 'series-name'; nameEl.textContent = name;
-  if (!visible) nameEl.style.color = 'var(--dim)';
-  var actions = document.createElement('div'); actions.className = 'series-actions';
-
-  // visibility toggle
   var visBtn = document.createElement('button');
   visBtn.className = 'action-btn' + (!visible ? ' confirm' : '');
   visBtn.textContent = visible ? 'Visible' : 'Hidden';
@@ -1031,6 +1185,7 @@ function makeSeriesRow(name, visible) {
       visBtn.textContent = newVisible ? 'Visible' : 'Hidden';
       visBtn.className = 'action-btn' + (!newVisible ? ' confirm' : '');
       nameEl.style.color = newVisible ? '' : 'var(--dim)';
+      seriesConfigCache[name] = { visible: newVisible };
       showToast(name + ' ' + (newVisible ? 'visible' : 'hidden'), false);
     } catch(e) { showToast('Error: ' + e.message, true); }
   });
@@ -1072,23 +1227,9 @@ function makeSeriesRow(name, visible) {
   });
 
   actions.appendChild(visBtn); actions.appendChild(renameBtn); actions.appendChild(deleteBtn);
-  row.appendChild(nameEl); row.appendChild(actions);
+  row.appendChild(handle); row.appendChild(nameEl); row.appendChild(actions);
   return row;
 }
-
-document.getElementById('saveSeriesOrderBtn').addEventListener('click', async function() {
-  var btn = document.getElementById('saveSeriesOrderBtn');
-  btn.disabled = true; btn.querySelector('span:last-child').textContent = 'Saving...';
-  try {
-    var res = await fetch('http://localhost:3001/api/series/reorder', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order: seriesOrder }),
-    });
-    var data = await res.json(); if (!res.ok) throw new Error(data.error);
-    showToast('Nav order saved', false); loadSeriesDropdown();
-  } catch(e) { showToast('Error: ' + e.message, true); }
-  btn.disabled = false; btn.querySelector('span:last-child').textContent = 'Save nav order';
-});
 
 document.getElementById('addSeriesBtn').addEventListener('click', async function() {
   var name = document.getElementById('newSeriesInput').value.trim(); if (!name) return;
@@ -1117,7 +1258,7 @@ function renderFeaturedList() {
   if (!featuredPhotos.length) {
     var empty = document.createElement('div');
     empty.style.cssText = 'padding:32px;font-size:12px;color:#ccc;letter-spacing:.1em;text-transform:uppercase;';
-    empty.textContent = 'No featured photos — mark photos as Featured in the Photos tab';
+    empty.textContent = 'No featured photos \u2014 mark photos as Featured in the Photos tab';
     featuredList.appendChild(empty); return;
   }
   featuredPhotos.forEach(function(photo, idx) {
@@ -1128,11 +1269,10 @@ function renderFeaturedList() {
     thumb.src = imgSrc(photo.src); thumb.onerror = function() { thumb.style.background = '#eee'; };
     var info = document.createElement('div'); info.className = 'featured-info';
     var t = document.createElement('div'); t.className = 'featured-title'; t.textContent = photo.title || photo.slug;
-    var m = document.createElement('div'); m.className = 'featured-meta'; m.textContent = photo.series + ' · ' + (photo.year || '');
+    var m = document.createElement('div'); m.className = 'featured-meta'; m.textContent = photo.series + ' \u00b7 ' + (photo.year || '');
     info.appendChild(t); info.appendChild(m);
     var handle = document.createElement('span'); handle.className = 'drag-handle'; handle.textContent = '\u2837';
     item.appendChild(num); item.appendChild(thumb); item.appendChild(info); item.appendChild(handle);
-
     item.addEventListener('dragstart', function(e) { featuredDragSrc = item; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
     item.addEventListener('dragend', function() { item.classList.remove('dragging'); document.querySelectorAll('.featured-item').forEach(function(el) { el.classList.remove('drag-over'); }); });
     item.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; document.querySelectorAll('.featured-item').forEach(function(el) { el.classList.remove('drag-over'); }); if (item !== featuredDragSrc) item.classList.add('drag-over'); });
@@ -1159,6 +1299,7 @@ document.getElementById('saveFeaturedBtn').addEventListener('click', async funct
   } catch(e) { showToast('Error: ' + e.message, true); }
   btn.disabled = false; btn.querySelector('span:last-child').textContent = 'Save order';
 });
+
 // ══ SHOP tab ══════════════════════════════════════════════════════════════════
 
 var shopBrowseList = document.getElementById('shopBrowseList');
@@ -1170,21 +1311,17 @@ var selectedPrintSlug = null;
 var currentShopView = 'edit';
 var shopDragSrc = null;
 
-// view toggle
 document.getElementById('shopViewEditBtn').addEventListener('click', function() {
   currentShopView = 'edit';
   document.getElementById('shopViewEditBtn').classList.add('active');
   document.getElementById('shopViewOrderBtn').classList.remove('active');
-  shopBrowseList.style.display = '';
-  shopDragPanel.style.display = 'none';
+  shopBrowseList.style.display = ''; shopDragPanel.style.display = 'none';
 });
-
 document.getElementById('shopViewOrderBtn').addEventListener('click', function() {
   currentShopView = 'order';
   document.getElementById('shopViewOrderBtn').classList.add('active');
   document.getElementById('shopViewEditBtn').classList.remove('active');
-  shopBrowseList.style.display = 'none';
-  shopDragPanel.style.display = 'flex';
+  shopBrowseList.style.display = 'none'; shopDragPanel.style.display = 'flex';
   renderShopOrderList();
 });
 
@@ -1215,21 +1352,15 @@ function renderShopBrowseList() {
     var item = document.createElement('div');
     item.className = 'photo-list-item' + (listing.slug === selectedPrintSlug ? ' selected' : '');
     item.dataset.slug = listing.slug;
-
     var thumb = document.createElement('img'); thumb.className = 'photo-thumb';
-    thumb.src = photo ? imgSrc(photo.src) : '';
-    thumb.onerror = function() { thumb.style.background = '#eee'; };
-
+    thumb.src = photo ? imgSrc(photo.src) : ''; thumb.onerror = function() { thumb.style.background = '#eee'; };
     var info = document.createElement('div'); info.className = 'photo-list-info';
-    var t = document.createElement('div'); t.className = 'photo-list-title';
-    t.textContent = photo ? (photo.title || listing.slug) : listing.slug;
+    var t = document.createElement('div'); t.className = 'photo-list-title'; t.textContent = photo ? (photo.title || listing.slug) : listing.slug;
     var m = document.createElement('div'); m.className = 'photo-list-meta';
     m.textContent = listing.sizes.length + ' size' + (listing.sizes.length !== 1 ? 's' : '') + (listing.visible ? '' : ' \u00b7 hidden');
     info.appendChild(t); info.appendChild(m);
-
     var badges = document.createElement('div'); badges.className = 'photo-list-badges';
     if (listing.visible) { var b = document.createElement('span'); b.className = 'badge active'; b.textContent = 'Live'; badges.appendChild(b); }
-
     item.appendChild(thumb); item.appendChild(info); item.appendChild(badges);
     item.addEventListener('click', function() { openShopEdit(listing.slug); });
     shopBrowseList.appendChild(item);
@@ -1250,10 +1381,12 @@ function renderShopEditPanel(listing, photo) {
   shopEditInner.innerHTML = '';
 
   if (photo) {
-    var thumbWrap = document.createElement('div'); thumbWrap.className = 'edit-thumb-wrap';
+    var thumbWrap = document.createElement('div'); thumbWrap.className = 'edit-thumb-wrap'; thumbWrap.style.cursor = 'zoom-in';
     var thumb = document.createElement('img'); thumb.src = imgSrc(photo.src);
     thumb.onerror = function() { thumbWrap.style.display = 'none'; };
-    thumbWrap.appendChild(thumb); shopEditInner.appendChild(thumbWrap);
+    thumbWrap.appendChild(thumb);
+    thumbWrap.addEventListener('click', function() { openImageLightbox(imgSrc(photo.src), photo.title); });
+    shopEditInner.appendChild(thumbWrap);
   }
 
   var topRow = document.createElement('div');
@@ -1275,8 +1408,7 @@ function renderShopEditPanel(listing, photo) {
       listing.visible = newVisible;
       visBtn.textContent = newVisible ? 'Live' : 'Hidden';
       visBtn.className = 'action-btn' + (!newVisible ? ' confirm' : '');
-      showToast(newVisible ? 'Listing live' : 'Listing hidden', false);
-      renderShopBrowseList();
+      showToast(newVisible ? 'Listing live' : 'Listing hidden', false); renderShopBrowseList();
     } catch(e) { showToast('Error: ' + e.message, true); }
   });
 
@@ -1295,6 +1427,35 @@ function renderShopEditPanel(listing, photo) {
   var fFinish = makeShopField('Finish', listing.finish);
   var fNotes = makeShopField('Notes', listing.notes);
   [fPriceLine, fMedium, fPaper, fFinish, fNotes].forEach(function(f) { shopEditInner.appendChild(f.wrap); });
+
+  // copy spec button
+  var copyRow = document.createElement('div'); copyRow.style.cssText = 'margin-bottom:20px;';
+  var copyBtn = document.createElement('button'); copyBtn.className = 'action-btn';
+  copyBtn.textContent = 'Copy order spec to clipboard';
+  copyBtn.addEventListener('click', function() {
+    var lines = [
+      'PRINT ORDER SPEC',
+      '----------------',
+      'Title: ' + (photo ? (photo.title || listing.slug) : listing.slug),
+      'Slug: ' + listing.slug,
+      'Medium: ' + (listing.medium || '\u2014'),
+      'Paper: ' + (listing.paper || '\u2014'),
+      'Finish: ' + (listing.finish || '\u2014'),
+      listing.notes ? 'Notes: ' + listing.notes : null,
+      '',
+      'Sizes:',
+    ].filter(Boolean);
+    (listing.sizes || []).forEach(function(s) {
+      var line = '  ' + s.label + ' \u2014 $' + (s.price / 100).toFixed(0);
+      if (s.edition) line += ' (Ed. ' + s.edition + ')';
+      if (!s.available) line += ' [SOLD OUT]';
+      lines.push(line);
+    });
+    navigator.clipboard.writeText(lines.join('\n')).then(function() {
+      showToast('Spec copied to clipboard', false);
+    }).catch(function() { showToast('Copy failed', true); });
+  });
+  copyRow.appendChild(copyBtn); shopEditInner.appendChild(copyRow);
 
   var sizesRule = document.createElement('div'); sizesRule.className = 'rule'; shopEditInner.appendChild(sizesRule);
   var sizesHeader = document.createElement('div');
@@ -1394,8 +1555,7 @@ function renderShopEditPanel(listing, photo) {
   saveRow.appendChild(saveBtn); shopEditInner.appendChild(saveRow);
 }
 
-// ── Shop order view (left panel drag list) ────────────────────────────────────
-
+// ── Shop order view ───────────────────────────────────────────────────────────
 function renderShopOrderList() {
   var orderList = document.getElementById('shopOrderList');
   orderList.innerHTML = '';
@@ -1408,41 +1568,24 @@ function renderShopOrderList() {
     var photo = shopPhotoMap[listing.slug];
     var item = document.createElement('div');
     item.className = 'order-item'; item.draggable = true; item.dataset.slug = listing.slug;
-
     var num = document.createElement('span'); num.className = 'order-num'; num.textContent = idx + 1;
     var thumb = document.createElement('img'); thumb.className = 'order-thumb';
-    thumb.src = photo ? imgSrc(photo.src) : '';
-    thumb.onerror = function() { thumb.style.background = '#eee'; };
+    thumb.src = photo ? imgSrc(photo.src) : ''; thumb.onerror = function() { thumb.style.background = '#eee'; };
     var info = document.createElement('div'); info.className = 'order-info';
-    var t = document.createElement('div'); t.className = 'order-title';
-    t.textContent = photo ? (photo.title || listing.slug) : listing.slug;
-    var m = document.createElement('div'); m.className = 'order-meta';
-    m.textContent = listing.visible ? 'Live' : 'Hidden';
+    var t = document.createElement('div'); t.className = 'order-title'; t.textContent = photo ? (photo.title || listing.slug) : listing.slug;
+    var m = document.createElement('div'); m.className = 'order-meta'; m.textContent = listing.visible ? 'Live' : 'Hidden';
     info.appendChild(t); info.appendChild(m);
     var handle = document.createElement('span'); handle.className = 'drag-handle'; handle.textContent = '\u2837';
-
     item.appendChild(num); item.appendChild(thumb); item.appendChild(info); item.appendChild(handle);
-
-    item.addEventListener('dragstart', function(e) {
-      shopDragSrc = item; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
-    });
-    item.addEventListener('dragend', function() {
-      item.classList.remove('dragging');
-      orderList.querySelectorAll('.order-item').forEach(function(el) { el.classList.remove('drag-over'); });
-    });
-    item.addEventListener('dragover', function(e) {
-      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
-      orderList.querySelectorAll('.order-item').forEach(function(el) { el.classList.remove('drag-over'); });
-      if (item !== shopDragSrc) item.classList.add('drag-over');
-    });
+    item.addEventListener('dragstart', function(e) { shopDragSrc = item; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    item.addEventListener('dragend', function() { item.classList.remove('dragging'); orderList.querySelectorAll('.order-item').forEach(function(el) { el.classList.remove('drag-over'); }); });
+    item.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; orderList.querySelectorAll('.order-item').forEach(function(el) { el.classList.remove('drag-over'); }); if (item !== shopDragSrc) item.classList.add('drag-over'); });
     item.addEventListener('drop', function(e) {
       e.preventDefault(); if (!shopDragSrc || shopDragSrc === item) return;
       var fi = allPrints.findIndex(function(p) { return p.slug === shopDragSrc.dataset.slug; });
       var ti = allPrints.findIndex(function(p) { return p.slug === item.dataset.slug; });
-      var moved = allPrints.splice(fi, 1)[0]; allPrints.splice(ti, 0, moved);
-      renderShopOrderList();
+      var moved = allPrints.splice(fi, 1)[0]; allPrints.splice(ti, 0, moved); renderShopOrderList();
     });
-
     orderList.appendChild(item);
   });
 }
@@ -1460,7 +1603,6 @@ document.getElementById('saveShopOrderBtn').addEventListener('click', async func
   } catch(e) { showToast('Error: ' + e.message, true); }
   btn.disabled = false; btn.querySelector('span:last-child').textContent = 'Save order';
 });
-
 
 </script>
 </body>
