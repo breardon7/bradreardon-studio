@@ -45,7 +45,7 @@ export default function PrintPage({ params }: { params: { slug: string } }) {
           subject: 'Print inquiry — ' + photo.title + ' (' + selectedSize.label + ')',
           print: {
             title: photo.title,
-            slug: listing.slug,
+            slug: listing!.slug,
             size: selectedSize.label,
             price: formatPrice(selectedSize.price),
             edition: selectedSize.edition ?? null,
