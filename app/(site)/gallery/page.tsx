@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { photos, SERIES } from '@/content/photos'
@@ -32,7 +32,7 @@ function getOrderedPhotos(seriesName: string, allPhotos: MediaItem[]): MediaItem
   return ordered
 }
 
-export default function GalleryPage() {
+function GalleryContent() {
   const searchParams = useSearchParams()
   const [active, setActive] = useState<string>(visibleSeries[0] ?? '')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -56,8 +56,6 @@ export default function GalleryPage() {
 
   return (
     <div className="flex flex-col flex-1">
-
-      {/* ── Photo + video grid ── */}
       <div className="flex-1 py-12 px-9">
         <div
           className="grid mx-auto"
@@ -137,7 +135,14 @@ export default function GalleryPage() {
           onNext={handleNext}
         />
       )}
-
     </div>
+  )
+}
+
+export default function GalleryPage() {
+  return (
+    <Suspense fallback={null}>
+      <GalleryContent />
+    </Suspense>
   )
 }
