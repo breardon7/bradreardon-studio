@@ -42,9 +42,9 @@ export default function PrintPage({ params }: { params: { slug: string } }) {
           name,
           email,
           message: message || '',
-          subject: 'Print inquiry — ' + photo!.title + ' (' + selectedSize.label + ')',
+          subject: 'Print inquiry — ' + photo.title + ' (' + selectedSize.label + ')',
           print: {
-            title: photo!.title,
+            title: photo.title,
             slug: listing!.slug,
             size: selectedSize.label,
             price: formatPrice(selectedSize.price),
@@ -81,11 +81,11 @@ export default function PrintPage({ params }: { params: { slug: string } }) {
             <div className="pr-16">
               <div
                 className="relative overflow-hidden w-full"
-                style={{ aspectRatio: photo!.aspectRatio, backgroundColor: '#f5f5f5' }}
+                style={{ aspectRatio: photo.aspectRatio, backgroundColor: '#f5f5f5' }}
               >
                 <Image
-                  src={photo!.src}
-                  alt={photo!.alt}
+                  src={photo.src}
+                  alt={photo.alt}
                   fill
                   sizes="(max-width: 768px) 100vw, 560px"
                   className="object-cover"
@@ -102,10 +102,10 @@ export default function PrintPage({ params }: { params: { slug: string } }) {
 
               {/* title + meta */}
               <p className="font-serif" style={{ fontSize: '22px', fontStyle: 'italic', color: '#1a1a1a', marginBottom: '6px' }}>
-                {photo!.title}
+                {photo.title}
               </p>
               <p style={{ fontSize: '11px', letterSpacing: '.18em', textTransform: 'uppercase', color: '#999', marginBottom: '32px' }}>
-                {photo!.series} · {photo!.year}
+                {photo.series} · {photo.year}
               </p>
 
               {/* print specs */}

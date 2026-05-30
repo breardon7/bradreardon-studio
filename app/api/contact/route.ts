@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
-// ── Validation ────────────────────────────────────────────────────────────────
 function validate(data: Record<string, unknown>) {
   const errors: string[] = []
   if (!data.name || typeof data.name !== 'string' || data.name.trim().length < 2)
     errors.push('Name is required')
   if (!data.email || typeof data.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email))
     errors.push('Valid email is required')
-  if (!data.message || typeof data.message !== 'string' || data.message.trim().length < 10)
-    errors.push('Message must be at least 10 characters')
+  if (!data.message || typeof data.message !== 'string')
+    errors.push('Message is required')
   return errors
 }
 
@@ -19,17 +16,18 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const errors = validate(body)
-
     if (errors.length > 0) {
       return NextResponse.json({ error: errors.join(', ') }, { status: 400 })
     }
 
     const { name, email, subject, message } = body
 
-    // Send notification to yourself
+    // Instantiate lazily so build doesn't fail without the env var
+    const resend = new Resend(process.env.RESEND_API_KEY)
+
     await resend.emails.send({
-      from: 'Portfolio Contact <noreply@bradreardon.studio>',  // ← update after DNS verified
-      to: 'brad@bradreardon.studio',                           // ← your inbox
+      from: 'Portfolio Contact <noreply@bradreardon.studio>',
+      to: 'brad@bradreardon.studio',
       replyTo: email,
       subject: `[Portfolio] ${subject || 'New message'} — from ${name}`,
       html: `
@@ -49,7 +47,6 @@ export async function POST(req: NextRequest) {
       `,
     })
 
-    // Auto-reply to sender
     await resend.emails.send({
       from: 'Brad Reardon <brad@bradreardon.studio>',
       to: email,
@@ -58,7 +55,7 @@ export async function POST(req: NextRequest) {
         <div style="font-family: Georgia, serif; max-width: 600px; color: #1a1a1a;">
           <p>Hi ${name},</p>
           <p>Thank you for your message. I'll be in touch within 48 hours.</p>
-          <p style="font-style: italic; color: #888;">— Your Name</p>
+          <p style="font-style: italic; color: #888;">— Brad</p>
         </div>
       `,
     })
