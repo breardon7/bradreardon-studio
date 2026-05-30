@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Libre_Baskerville, Jost } from 'next/font/google'
+import { Suspense } from 'react'
 import Nav from '@/components/Nav'
 import SeriesNav from '@/components/SeriesNav'
 import './globals.css'
@@ -42,7 +43,9 @@ export default function RootLayout({
     <html lang="en" className={`${baskerville.variable} ${jost.variable}`}>
       <body style={{ backgroundColor: '#ffffff', color: '#1a1a1a' }} className="font-sans antialiased min-h-screen flex flex-col">
         <Nav />
-        <SeriesNav />
+        <Suspense fallback={null}>
+          <SeriesNav />
+        </Suspense>
         <main className="flex-1 flex flex-col">{children}</main>
         <footer className="border-t mt-24 py-8 px-9 flex justify-between items-center" style={{ borderColor: '#e5e5e5' }}>
           <span className="text-xs tracking-widest uppercase" style={{ color: '#999' }}>
