@@ -9,6 +9,9 @@ export interface Photo {
   year: number
   featured?: boolean
   cover?: boolean
+  hidden?: boolean
+  print?: boolean
+  vimeoUrl?: string
 }
 
 // ── Series list ───────────────────────────────────────────────────────────────
