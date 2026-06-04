@@ -478,7 +478,6 @@ export const photos: Photo[] = [
     series: 'Still Life',
     aspectRatio: '2/3',
     year: 2025,
-    featured: true,
   },
   {
     slug: 'still-life-003-2025',
@@ -533,6 +532,7 @@ export const photos: Photo[] = [
     series: 'Still Life',
     aspectRatio: '2/3',
     year: 2026,
+    featured: true,
   },
   {
     slug: 'reflect-amouge-2026',
