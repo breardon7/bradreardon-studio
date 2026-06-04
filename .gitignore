@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/scripts
 
 # next.js
 /.next/
@@ -44,3 +45,6 @@ next-env.d.ts
 tools/studio/node_modules/
 tools/studio/dist/
 tools/studio/tmp/
+
+# photos
+content/photos.ts.backup
