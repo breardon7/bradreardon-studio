@@ -31,7 +31,7 @@ export const SERIES = [
 export const photos: Photo[] = [
   {
     slug: 'urban-crown-shyness',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__urban-crown-shyness.jpg',
+    src: '/images/architecture/urban-crown-shyness.jpg',
     alt: 'Urban Crown Shyness',
     title: 'Urban Crown Shyness',
     series: 'Architecture',
@@ -42,7 +42,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'moons-edge',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__moons-edge-left.jpg',
+    src: '/images/street/moons-edge-left.jpg',
     alt: "Alone at the Moon's Edge",
     title: "At Moon's Edge",
     series: 'Urban Extracts',
@@ -55,7 +55,7 @@ export const photos: Photo[] = [
   
   {
     slug: 'colors-of-cdmx-001-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__1-DSCF5662.jpg',
+    src: '/images/architecture/1-DSCF5662.jpg',
     alt: 'Museo Casa Estudio Frida Kahlo',
     title: 'Colors of CDMX 002',
     series: 'Architecture',
@@ -66,7 +66,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'colors-of-cdmx-002-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__2-DSCF5685.jpg',
+    src: '/images/architecture/2-DSCF5685.jpg',
     alt: 'Museo Casa Estudio Diego Rivera',
     title: 'Colors of CDMX 001',
     series: 'Architecture',
@@ -78,7 +78,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'colors-of-cdmx-003-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__3-DSCF5699.jpg',
+    src: '/images/architecture/3-DSCF5699.jpg',
     alt: 'Diego Rivera 118',
     title: 'Colors of CDMX 003',
     series: 'Architecture',
@@ -89,7 +89,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'endless-pain-001-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/endless-pane__1-DSCF6661.jpg',
+    src: '/images/endless-pane/1-DSCF6661.jpg',
     alt: 'Endless Pain 001',
     title: 'Endless Pain 001',
     series: 'Endless Pane',
@@ -100,7 +100,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'endless-pane-002-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/endless-pane__2-DSCF6737.jpg',
+    src: '/images/endless-pane/2-DSCF6737.jpg',
     alt: 'Endless Pane 002',
     title: 'Endless Pane 002',
     series: 'Endless Pane',
@@ -110,7 +110,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'endless-pane-003-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/endless-pane__3-DSCF7717.jpg',
+    src: '/images/endless-pane/3-DSCF7717.jpg',
     alt: 'Endless Pane 003',
     title: 'Endless Pane 003',
     series: 'Endless Pane',
@@ -121,7 +121,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'endless-pane-004-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/endless-pane__4-DSCF2100.jpg',
+    src: '/images/endless-pane/4-DSCF2100.jpg',
     alt: 'Endless Pane 004',
     title: 'Endless Pane 004',
     series: 'Endless Pane',
@@ -131,7 +131,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'endless-pane-005-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/endless-pane__5-DSCF2106.jpg',
+    src: '/images/endless-pane/5-DSCF2106.jpg',
     alt: 'Endless Pane 005',
     title: 'Endless Pane 005',
     series: 'Endless Pane',
@@ -142,7 +142,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'endless-pane-006-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/endless-pane__6-DSCF2243.jpg',
+    src: '/images/endless-pane/6-DSCF2243.jpg',
     alt: 'Endless Pane 006',
     title: 'Endless Pane 006',
     series: 'Endless Pane',
@@ -152,7 +152,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'alwyn-court-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__1-DSCF4384.jpg',
+    src: '/images/architecture/1-DSCF4384.jpg',
     alt: 'Alwyn Court',
     title: 'Alwyn Court',
     series: 'Architecture',
@@ -163,7 +163,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'drops-from-above-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__2-DSCF7376.jpg',
+    src: '/images/architecture/2-DSCF7376.jpg',
     alt: 'Drops From Above',
     title: 'Drops From Above',
     series: 'Architecture',
@@ -173,7 +173,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'impenetrable-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__3-DSCF9491.jpg',
+    src: '/images/architecture/3-DSCF9491.jpg',
     alt: 'Impenetrable',
     title: 'Impenetrable',
     series: 'Architecture',
@@ -182,7 +182,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'budapest-001-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__4-DSCF0315.jpg',
+    src: '/images/architecture/4-DSCF0315.jpg',
     alt: 'Budapest 001',
     title: 'Budapest 001',
     series: 'Architecture',
@@ -192,7 +192,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'shadow-castle-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__5-DSCF0354.jpg',
+    src: '/images/architecture/5-DSCF0354.jpg',
     alt: 'Shadow Castle',
     title: 'Shadow Castle',
     series: 'Architecture',
@@ -201,7 +201,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'parked-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__6-DSCF1047.jpg',
+    src: '/images/architecture/6-DSCF1047.jpg',
     alt: 'Parked',
     title: 'Parked',
     series: 'Architecture',
@@ -211,7 +211,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'in-progress-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__7-DSCF2259.jpg',
+    src: '/images/architecture/7-DSCF2259.jpg',
     alt: 'In Progress',
     title: 'In Progress',
     series: 'Architecture',
@@ -220,7 +220,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'sp001-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/personal-projects__DSCF1596.jpg',
+    src: '/images/personal-projects/DSCF1596.jpg',
     alt: 'SP001',
     title: 'SP001',
     series: 'Self-Portraits',
@@ -229,7 +229,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'sp002-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/personal-projects__Untitled_design.jpg',
+    src: '/images/personal-projects/Untitled design.jpg',
     alt: 'SP002',
     title: 'SP002',
     series: 'Self-Portraits',
@@ -239,7 +239,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'sp003-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/personal-projects__DSCF1587.jpg',
+    src: '/images/personal-projects/DSCF1587.jpg',
     alt: 'SP003',
     title: 'SP003',
     series: 'Self-Portraits',
@@ -248,7 +248,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'sp004-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/personal-projects__DSCF1667.jpg',
+    src: '/images/personal-projects/DSCF1667.jpg',
     alt: 'SP004',
     title: 'SP004',
     series: 'Self-Portraits',
@@ -257,7 +257,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'atc-001-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/around-the-corner__1-DSCF5200.jpg',
+    src: '/images/around-the-corner/1-DSCF5200.jpg',
     alt: 'ATC 001',
     title: 'ATC 001',
     series: 'Around the Corner',
@@ -266,7 +266,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'atc-002-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/around-the-corner__2-DSCF7430.jpg',
+    src: '/images/around-the-corner/2-DSCF7430.jpg',
     alt: 'ATC 002',
     title: 'ATC 002',
     series: 'Around the Corner',
@@ -275,7 +275,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'atc-003-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/around-the-corner__3-DSCF7585.jpg',
+    src: '/images/around-the-corner/3-DSCF7585.jpg',
     alt: 'ATC 003',
     title: 'ATC 003',
     series: 'Around the Corner',
@@ -284,7 +284,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'atc-004-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/around-the-corner__4-DSCF8093.jpg',
+    src: '/images/around-the-corner/4-DSCF8093.jpg',
     alt: 'ATC 004',
     title: 'ATC 004',
     series: 'Around the Corner',
@@ -295,7 +295,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'atc-005-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/around-the-corner__5-DSCF8127.jpg',
+    src: '/images/around-the-corner/5-DSCF8127.jpg',
     alt: 'ATC 005',
     title: 'ATC 005',
     series: 'Around the Corner',
@@ -307,7 +307,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'atc-006-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/around-the-corner__6-DSCF8233.jpg',
+    src: '/images/around-the-corner/6-DSCF8233.jpg',
     alt: 'ATC 006',
     title: 'ATC 006',
     series: 'Around the Corner',
@@ -316,7 +316,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'atc-007-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__7-DSCF8234.jpg',
+    src: '/images/architecture/7-DSCF8234.jpg',
     alt: 'ATC 007',
     title: 'ATC 007',
     series: 'Around the Corner',
@@ -325,7 +325,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'atc-007-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/around-the-corner__8-DSCF9486.jpg',
+    src: '/images/around-the-corner/8-DSCF9486.jpg',
     alt: 'ATC 007',
     title: 'ATC 007',
     series: 'Around the Corner',
@@ -335,7 +335,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'clasped-001-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/clasped__DSCF2584.jpg',
+    src: '/images/clasped/DSCF2584.jpg',
     alt: 'Clasped 001',
     title: 'Clasped 001',
     series: 'Clasped',
@@ -348,7 +348,7 @@ export const photos: Photo[] = [
   
   {
     slug: 'clasped-003-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/clasped__DSCF2677.jpg',
+    src: '/images/clasped/DSCF2677.jpg',
     alt: 'Clasped 003',
     title: 'Clasped 003',
     series: 'Clasped',
@@ -360,7 +360,7 @@ export const photos: Photo[] = [
   
   {
     slug: 'still-life-001-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/still-life__DSCF1967.jpg',
+    src: '/images/still-life/DSCF1967.jpg',
     alt: 'Still Life 001',
     title: 'Still Life 001',
     series: 'Still Life',
@@ -372,7 +372,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'crimson-bridge-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF1873.jpg',
+    src: '/images/street/DSCF1873.jpg',
     alt: 'Crimson Bridge',
     title: 'Crimson Bridge',
     series: 'Urban Extracts',
@@ -385,7 +385,7 @@ export const photos: Photo[] = [
   
   {
     slug: 'clasped-002-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/clasped__DSCF2651_.2.jpg',
+    src: '/images/clasped/DSCF2651 (2).jpg',
     alt: 'Clasped 002',
     title: 'Clasped 002',
     series: 'Clasped',
@@ -395,7 +395,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'ep-001-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/endless-pane__1-DSCF6661.jpg',
+    src: '/images/endless-pane/1-DSCF6661.jpg',
     alt: 'EP 001',
     title: 'EP 001',
     series: 'Endless Pane',
@@ -405,7 +405,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'ep-002-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/endless-pane__3-DSCF7717.jpg',
+    src: '/images/endless-pane/3-DSCF7717.jpg',
     alt: 'Ep 002',
     title: 'Ep 002',
     series: 'Endless Pane',
@@ -415,7 +415,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'ep-003-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/endless-pane__2-DSCF6737.jpg',
+    src: '/images/endless-pane/2-DSCF6737.jpg',
     alt: 'EP 003',
     title: 'EP 003',
     series: 'Endless Pane',
@@ -424,7 +424,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'ep-004-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__DSCF2100.jpg',
+    src: '/images/architecture/DSCF2100.jpg',
     alt: 'EP 004',
     title: 'EP 004',
     series: 'Endless Pane',
@@ -433,7 +433,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'ep-005-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__DSCF2106.jpg',
+    src: '/images/architecture/DSCF2106.jpg',
     alt: 'Ep 005',
     title: 'Ep 005',
     series: 'Endless Pane',
@@ -443,7 +443,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'ep-006-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__DSCF2243.jpg',
+    src: '/images/architecture/DSCF2243.jpg',
     alt: 'EP 006',
     title: 'EP 006',
     series: 'Endless Pane',
@@ -452,7 +452,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'cycling-001-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF7382_.1.jpg',
+    src: '/images/street/DSCF7382 (1).jpg',
     alt: 'Cycling 001',
     title: 'Cycling 001',
     series: 'Urban Extracts',
@@ -463,7 +463,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'pigeon-holed-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/urban-extracts__DSCF2433.jpg',
+    src: '/images/urban-extracts/DSCF2433.jpg',
     alt: 'Pigeon Holed',
     title: 'Pigeon Holed',
     series: 'Urban Extracts',
@@ -474,7 +474,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'still-life-002-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/still-life__DSCF1477.jpg',
+    src: '/images/still-life/DSCF1477.jpg',
     alt: 'Still Life 002',
     title: 'Still Life 002',
     series: 'Still Life',
@@ -483,7 +483,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'still-life-003-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__DSCF1480.jpg',
+    src: '/images/architecture/DSCF1480.jpg',
     alt: 'Still Life 003',
     title: 'Still Life 003',
     series: 'Still Life',
@@ -492,7 +492,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'still-life-004-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/still-life__DSCF1993.jpg',
+    src: '/images/still-life/DSCF1993.jpg',
     alt: 'Still Life 004',
     title: 'Still Life 004',
     series: 'Still Life',
@@ -501,7 +501,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'still-life-005-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/still-life__DSCF1992.jpg',
+    src: '/images/still-life/DSCF1992.jpg',
     alt: 'Still Life 005',
     title: 'Still Life 005',
     series: 'Still Life',
@@ -510,7 +510,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'anua-pomegranate-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__DSCF1954.jpg',
+    src: '/images/architecture/DSCF1954.jpg',
     alt: 'Anua - Pomegranate',
     title: 'Anua - Pom',
     series: 'Still Life',
@@ -519,7 +519,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'still-life-006-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/still-life__DSCF1496.jpg',
+    src: '/images/still-life/DSCF1496.jpg',
     alt: 'Still Life 006',
     title: 'Still Life 006',
     series: 'Still Life',
@@ -528,7 +528,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'the-o-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/still-life__DSCF2019.jpg',
+    src: '/images/still-life/DSCF2019.jpg',
     alt: 'The O',
     title: 'The O',
     series: 'Still Life',
@@ -537,7 +537,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'reflect-amouge-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/self-portraits__DSCF1933.jpg',
+    src: '/images/self-portraits/DSCF1933.jpg',
     alt: 'Reflect - Amouge',
     title: 'Reflect - Amouge',
     series: 'Still Life',
@@ -546,7 +546,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'barbed-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/urban-extracts__DSCF7276.jpg',
+    src: '/images/urban-extracts/DSCF7276.jpg',
     alt: 'Barbed',
     title: 'Barbed',
     series: 'Urban Extracts',
@@ -556,7 +556,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'the-path-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__DSCF2718.jpg',
+    src: '/images/architecture/DSCF2718.jpg',
     alt: 'The Path',
     title: 'The Path',
     series: 'Urban Extracts',
@@ -566,7 +566,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'flipped-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/urban-extracts__DSCF6260.jpg',
+    src: '/images/urban-extracts/DSCF6260.jpg',
     alt: 'Flipped',
     title: 'Flipped',
     series: 'Urban Extracts',
@@ -576,7 +576,7 @@ export const photos: Photo[] = [
   
   {
     slug: 'fountain-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/urban-extracts__FA3AF6CA-F475-4F00-9091-4A88ECD9E2F2.jpg',
+    src: '/images/urban-extracts/FA3AF6CA-F475-4F00-9091-4A88ECD9E2F2.jpg',
     alt: 'Fountain',
     title: 'Fountain',
     series: 'Urban Extracts',
@@ -585,7 +585,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'light-shines-no-further-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/urban-extracts__463BB54E-4A4A-4E3C-AC1F-12FAD47E6B8F.jpg',
+    src: '/images/urban-extracts/463BB54E-4A4A-4E3C-AC1F-12FAD47E6B8F.jpg',
     alt: 'Light Shines No Further',
     title: 'Light Shines No Further',
     series: 'Urban Extracts',
@@ -594,7 +594,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'fading-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF8183.jpg',
+    src: '/images/street/DSCF8183.jpg',
     alt: 'Fading',
     title: 'Fading',
     series: 'Street',
@@ -603,7 +603,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'silv-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/around-the-corner__DSCF2713.jpg',
+    src: '/images/around-the-corner/DSCF2713.jpg',
     alt: 'Silv',
     title: 'Silv',
     series: 'Around the Corner',
@@ -612,7 +612,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'pensive-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF0649.jpg',
+    src: '/images/street/DSCF0649.jpg',
     alt: 'Pensive',
     title: 'Pensive',
     series: 'Street',
@@ -621,7 +621,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'witness-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__DSCF0596.jpg',
+    src: '/images/architecture/DSCF0596.jpg',
     alt: 'Witness',
     title: 'Witness',
     series: 'Street',
@@ -630,7 +630,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'flow-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF9820.jpg',
+    src: '/images/street/DSCF9820.jpg',
     alt: 'Flow',
     title: 'Flow',
     series: 'Street',
@@ -639,7 +639,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'trapped-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF0702.jpg',
+    src: '/images/street/DSCF0702.jpg',
     alt: 'Trapped',
     title: 'Trapped',
     series: 'Street',
@@ -648,7 +648,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'peaking-into-their-future-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF0831.jpg',
+    src: '/images/street/DSCF0831.jpg',
     alt: 'Peaking Into Their Future',
     title: 'Peaking Into Their Future',
     series: 'Street',
@@ -657,7 +657,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'analog-slog-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF2289.jpg',
+    src: '/images/street/DSCF2289.jpg',
     alt: 'Analog Slog',
     title: 'Analog Slog',
     series: 'Street',
@@ -666,7 +666,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'ponder-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF1304.jpg',
+    src: '/images/street/DSCF1304.jpg',
     alt: 'Ponder',
     title: 'Ponder',
     series: 'Street',
@@ -675,7 +675,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'now-is-now-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF9142.jpg',
+    src: '/images/street/DSCF9142.jpg',
     alt: 'Now is Now',
     title: 'Now is Now',
     series: 'Street',
@@ -684,7 +684,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'reflections-2026',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/street__DSCF2690.jpg',
+    src: '/images/street/DSCF2690.jpg',
     alt: 'Reflections',
     title: 'Reflections',
     series: 'Street',
@@ -693,7 +693,7 @@ export const photos: Photo[] = [
   },
   {
     slug: 'fated-2025',
-    src: 'https://github.com/breardon7/bradreardon-studio/releases/download/images-v1/architecture__DSCF0300.jpg',
+    src: '/images/architecture/DSCF0300.jpg',
     alt: 'Fated',
     title: 'Fated',
     series: 'Architecture',

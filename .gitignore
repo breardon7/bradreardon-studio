@@ -46,7 +46,7 @@ tools/studio/dist/
 tools/studio/tmp/
 
 # Images
-public/images/
+# public/images/
 *.jpg
 *.jpeg
 *.png
@@ -62,3 +62,5 @@ public/images/
 *.cr2
 *.nef
 *.raf
+.vercel
+.env*
