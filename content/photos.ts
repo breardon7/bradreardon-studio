@@ -696,7 +696,7 @@ export const photos: Photo[] = [
     src: '/images/architecture/DSCF0300.jpg',
     alt: 'Fated',
     title: 'Fated',
-    series: 'Architecture',
+    series: 'Street',
     aspectRatio: '2/3',
     year: 2025,
   },
