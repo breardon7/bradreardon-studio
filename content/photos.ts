@@ -700,6 +700,15 @@ export const photos: Photo[] = [
     aspectRatio: '2/3',
     year: 2025,
   },
+  {
+    slug: 'the-transition-2024',
+    src: '/images/street/DSCF2842 (1).jpg',
+    alt: 'The Transition',
+    title: 'The Transition',
+    series: 'Street',
+    aspectRatio: '2/3',
+    year: 2024,
+  },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -97,6 +97,7 @@ export const seriesOrder: Record<string, string[]> = {
     'flow-2025',
     'trapped-2025',
     'ponder-2025',
+    'the-transition-2024',
     'fading-2026',
     'now-is-now-2025',
     'analog-slog-2025',
