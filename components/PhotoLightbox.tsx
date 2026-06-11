@@ -57,19 +57,96 @@ export default function PhotoLightbox({ photos, currentIndex, onClose, onPrev, o
       {/* Prev button */}
       <button
         onClick={(e) => { e.stopPropagation(); onPrev() }}
-        className="fixed left-6 top-1/2 -translate-y-1/2 text-[11px] tracking-[.2em] uppercase transition-colors duration-200"
-        style={{ color: '#999' }}
+        aria-label="Previous photo"
+        style={{
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: '72px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: '#1a1a1a',
+        }}
       >
-        ←
+        <span style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '44px',
+          height: '44px',
+          borderRadius: '50%',
+          backgroundColor: 'rgba(255,255,255,0.9)',
+          boxShadow: '0 1px 12px rgba(0,0,0,0.12)',
+          fontSize: '18px',
+          lineHeight: 1,
+        }}>
+          ←
+        </span>
       </button>
 
       {/* Next button */}
       <button
         onClick={(e) => { e.stopPropagation(); onNext() }}
-        className="fixed right-6 top-1/2 -translate-y-1/2 text-[11px] tracking-[.2em] uppercase transition-colors duration-200"
-        style={{ color: '#999' }}
+        aria-label="Next photo"
+        style={{
+          position: 'fixed',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: '72px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: '#1a1a1a',
+        }}
       >
-        →
+        <span style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '44px',
+          height: '44px',
+          borderRadius: '50%',
+          backgroundColor: 'rgba(255,255,255,0.9)',
+          boxShadow: '0 1px 12px rgba(0,0,0,0.12)',
+          fontSize: '18px',
+          lineHeight: 1,
+        }}>
+          →
+        </span>
+      </button>
+
+      {/* Close button — top right, always tappable */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onClose() }}
+        aria-label="Close"
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          width: '44px',
+          height: '44px',
+          borderRadius: '50%',
+          backgroundColor: 'rgba(255,255,255,0.9)',
+          boxShadow: '0 1px 12px rgba(0,0,0,0.12)',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '18px',
+          color: '#1a1a1a',
+        }}
+      >
+        ×
       </button>
 
       {/* Caption */}
@@ -86,13 +163,6 @@ export default function PhotoLightbox({ photos, currentIndex, onClose, onPrev, o
       <div className="fixed bottom-8 right-9">
         <p className="text-[10px] tracking-[.18em]" style={{ color: '#ccc' }}>
           {currentIndex + 1} / {photos.length}
-        </p>
-      </div>
-
-      {/* Close hint */}
-      <div className="fixed top-8 right-9">
-        <p className="text-[10px] tracking-[.18em] uppercase" style={{ color: '#ccc' }}>
-          Esc to close
         </p>
       </div>
     </div>

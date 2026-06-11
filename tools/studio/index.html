@@ -460,31 +460,20 @@
       <div class="photos-filter-bar">
         <select id="photosSeriesFilter"><option value="">All series</option></select>
         <input id="photosSearch" type="text" placeholder="Search..." style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);font-family:Jost,sans-serif;font-weight:300;font-size:12px;color:var(--text);padding:4px 0;outline:none;max-width:120px;" />
-        <div class="view-toggle">
-          <button class="view-btn active" id="viewEditBtn">Edit</button>
-          <button class="view-btn" id="viewOrderBtn">Order</button>
-        </div>
       </div>
-      <div class="photos-list" id="photosList"></div>
+      <div class="photos-list" id="photosList" style="flex:1;overflow-y:auto;"></div>
+      <!-- Save order button — shown only when a series is filtered -->
+      <div id="saveOrderRow" style="display:none;padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0;">
+        <button class="submit-btn" id="saveOrderBtn">
+          <span class="line"></span><span>Save order</span>
+        </button>
+      </div>
     </div>
     <div class="divider"></div>
     <div id="photosRight" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
-      <!-- edit view -->
-      <div id="editView" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
+      <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
         <div class="photos-edit-panel" id="photosEditPanel">
           <div class="edit-empty">Select a photo to edit</div>
-        </div>
-      </div>
-      <!-- order view -->
-      <div id="orderView" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
-        <div class="order-panel">
-          <div class="order-header">
-            <span class="section-label" style="margin:0;" id="orderSeriesLabel">Select a series to reorder</span>
-            <button class="submit-btn" id="saveOrderBtn" style="margin-top:0;">
-              <span class="line"></span><span>Save order</span>
-            </button>
-          </div>
-          <div class="order-list" id="orderList"></div>
         </div>
       </div>
     </div>
@@ -729,31 +718,19 @@ function resetForm() {
 var photosList = document.getElementById('photosList');
 var photosEditPanel = document.getElementById('photosEditPanel');
 var photosSeriesFilter = document.getElementById('photosSeriesFilter');
-var editView = document.getElementById('editView');
-var orderView = document.getElementById('orderView');
+var saveOrderRow = document.getElementById('saveOrderRow');
 var allPhotos = [];
 var selectedSlug = null;
-var currentView = 'edit';
-var searchInput = document.getElementById('photosSearch');
-
-document.getElementById('viewEditBtn').addEventListener('click', function() {
-  currentView = 'edit';
-  document.getElementById('viewEditBtn').classList.add('active');
-  document.getElementById('viewOrderBtn').classList.remove('active');
-  editView.style.display = 'flex'; orderView.style.display = 'none';
-});
-document.getElementById('viewOrderBtn').addEventListener('click', function() {
-  currentView = 'order';
-  document.getElementById('viewOrderBtn').classList.add('active');
-  document.getElementById('viewEditBtn').classList.remove('active');
-  editView.style.display = 'none'; orderView.style.display = 'flex';
-  renderOrderView();
-});
+var photosDragSrc = null;
+var orderedSlugs = []; // current drag order for the filtered series
 
 photosSeriesFilter.addEventListener('change', function() {
   renderPhotosList();
-  if (currentView === 'order') renderOrderView();
+  // show/hide save order button
+  saveOrderRow.style.display = photosSeriesFilter.value ? 'block' : 'none';
 });
+
+var searchInput = document.getElementById('photosSearch');
 if (searchInput) searchInput.addEventListener('input', renderPhotosList);
 
 function loadPhotosList() {
@@ -761,7 +738,6 @@ function loadPhotosList() {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       allPhotos = data.photos;
-      // Update series count badges
       updateSeriesCounts(data.photos);
       renderPhotosList();
     });
@@ -776,309 +752,99 @@ function updateSeriesCounts(photos) {
 function renderPhotosList() {
   var filter = photosSeriesFilter.value;
   var search = searchInput ? searchInput.value.toLowerCase().trim() : '';
-  var filtered = allPhotos.filter(function(p) {
-    var matchSeries = !filter || p.series === filter;
-    var matchSearch = !search || (p.title || '').toLowerCase().includes(search) || p.slug.toLowerCase().includes(search);
-    return matchSeries && matchSearch;
-  });
 
+  // If a series is selected, fetch the saved order for that series
+  if (filter) {
+    fetch('http://localhost:3001/api/series-order/' + encodeURIComponent(filter))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        orderedSlugs = data.photos.map(function(p) { return p.slug; });
+        renderPhotosListWithOrder(filter, search, data.photos);
+      });
+  } else {
+    orderedSlugs = [];
+    var filtered = search
+      ? allPhotos.filter(function(p) { return (p.title || '').toLowerCase().includes(search) || p.slug.toLowerCase().includes(search); })
+      : allPhotos;
+    renderPhotosListItems(filtered, false);
+  }
+}
+
+function renderPhotosListWithOrder(filter, search, orderedPhotos) {
+  var filtered = search
+    ? orderedPhotos.filter(function(p) { return (p.title || '').toLowerCase().includes(search) || p.slug.toLowerCase().includes(search); })
+    : orderedPhotos;
+  renderPhotosListItems(filtered, !search); // draggable only when not searching
+}
+
+function renderPhotosListItems(filtered, draggable) {
   photosList.innerHTML = '';
   if (!filtered.length) {
     var empty = document.createElement('div');
     empty.style.cssText = 'padding:24px 20px;font-size:12px;color:#ccc;letter-spacing:.1em;text-transform:uppercase;';
-    empty.textContent = search ? 'No results' : 'No photos';
-    photosList.appendChild(empty); return;
+    empty.textContent = 'No photos'; photosList.appendChild(empty); return;
   }
-  filtered.forEach(function(photo) {
+
+  filtered.forEach(function(photo, idx) {
     var item = document.createElement('div');
     item.className = 'photo-list-item' + (photo.slug === selectedSlug ? ' selected' : '');
     if (photo.hidden) item.style.opacity = '0.5';
     item.dataset.slug = photo.slug;
+
+    if (draggable) {
+      item.draggable = true;
+      item.style.cursor = 'grab';
+
+      item.addEventListener('dragstart', function(e) {
+        photosDragSrc = item; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
+      });
+      item.addEventListener('dragend', function() {
+        item.classList.remove('dragging');
+        photosList.querySelectorAll('.photo-list-item').forEach(function(el) { el.classList.remove('drag-over'); });
+      });
+      item.addEventListener('dragover', function(e) {
+        e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+        photosList.querySelectorAll('.photo-list-item').forEach(function(el) { el.classList.remove('drag-over'); });
+        if (item !== photosDragSrc) item.classList.add('drag-over');
+      });
+      item.addEventListener('drop', function(e) {
+        e.preventDefault(); if (!photosDragSrc || photosDragSrc === item) return;
+        var fromSlug = photosDragSrc.dataset.slug;
+        var toSlug = item.dataset.slug;
+        var fi = orderedSlugs.indexOf(fromSlug);
+        var ti = orderedSlugs.indexOf(toSlug);
+        if (fi === -1 || ti === -1) return;
+        var moved = orderedSlugs.splice(fi, 1)[0]; orderedSlugs.splice(ti, 0, moved);
+        // re-render in new order
+        var reordered = orderedSlugs.map(function(s) { return allPhotos.find(function(p) { return p.slug === s; }); }).filter(Boolean);
+        renderPhotosListItems(reordered, true);
+      });
+    }
+
     var thumb = document.createElement('img'); thumb.className = 'photo-thumb';
     thumb.src = imgSrc(photo.src); thumb.onerror = function() { thumb.style.background = '#eee'; };
+
     var info = document.createElement('div'); info.className = 'photo-list-info';
     var t = document.createElement('div'); t.className = 'photo-list-title'; t.textContent = photo.title || photo.slug;
-    var m = document.createElement('div'); m.className = 'photo-list-meta'; m.textContent = photo.series + ' \u00b7 ' + (photo.year || '');
+    var m = document.createElement('div'); m.className = 'photo-list-meta'; m.textContent = photo.series + ' · ' + (photo.year || '');
     info.appendChild(t); info.appendChild(m);
+
     var badges = document.createElement('div'); badges.className = 'photo-list-badges';
     if (photo.cover) { var b = document.createElement('span'); b.className = 'badge active'; b.textContent = 'C'; badges.appendChild(b); }
     if (photo.featured) { var b2 = document.createElement('span'); b2.className = 'badge active'; b2.textContent = 'F'; badges.appendChild(b2); }
     if (photo.hidden) { var b3 = document.createElement('span'); b3.className = 'badge'; b3.textContent = 'H'; b3.style.color = 'var(--muted)'; badges.appendChild(b3); }
     if (photo.print) { var b4 = document.createElement('span'); b4.className = 'badge active'; b4.style.borderColor='#888'; b4.style.color='#888'; b4.textContent = 'P'; badges.appendChild(b4); }
-    item.appendChild(thumb); item.appendChild(info); item.appendChild(badges);
-    item.addEventListener('click', function() { if (currentView === 'edit') openPhotoEdit(photo.slug); });
+
+    if (draggable) {
+      var handle = document.createElement('span'); handle.className = 'drag-handle'; handle.textContent = '⠷';
+      handle.style.cssText = 'color:var(--dim);font-size:14px;flex-shrink:0;line-height:1;margin-left:8px;';
+      item.appendChild(thumb); item.appendChild(info); item.appendChild(badges); item.appendChild(handle);
+    } else {
+      item.appendChild(thumb); item.appendChild(info); item.appendChild(badges);
+    }
+
+    item.addEventListener('click', function() { openPhotoEdit(photo.slug); });
     photosList.appendChild(item);
-  });
-}
-
-function openPhotoEdit(slug) {
-  if (hasUnsavedChanges) {
-    if (!confirm('You have unsaved changes. Discard them?')) return;
-    markClean();
-  }
-  selectedSlug = slug;
-  document.querySelectorAll('.photo-list-item').forEach(function(el) {
-    el.classList.toggle('selected', el.dataset.slug === slug);
-  });
-  var photo = allPhotos.find(function(p) { return p.slug === slug; });
-  if (!photo) return;
-  fetch('http://localhost:3001/api/series').then(function(r) { return r.json(); })
-    .then(function(data) { renderEditPanel(photo, data.series); });
-}
-
-function renderEditPanel(photo, seriesList) {
-  photosEditPanel.innerHTML = '';
-  markClean();
-
-  // thumbnail — click to open lightbox
-  var thumbWrap = document.createElement('div'); thumbWrap.className = 'edit-thumb-wrap';
-  thumbWrap.style.cursor = 'zoom-in';
-  var thumb = document.createElement('img'); thumb.src = imgSrc(photo.src);
-  thumb.onerror = function() { thumbWrap.style.display = 'none'; };
-  thumbWrap.appendChild(thumb);
-  thumbWrap.addEventListener('click', function() { openImageLightbox(imgSrc(photo.src), photo.title); });
-  photosEditPanel.appendChild(thumbWrap);
-
-  // image dimensions display
-  var dimsEl = document.createElement('p');
-  dimsEl.style.cssText = 'font-size:11px;color:var(--muted);letter-spacing:.08em;margin-bottom:20px;margin-top:-16px;';
-  dimsEl.textContent = 'Loading dimensions...';
-  photosEditPanel.appendChild(dimsEl);
-  fetch('http://localhost:3001/api/image-dimensions?src=' + encodeURIComponent(photo.src))
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.width) {
-        var declared = photo.aspectRatio || '';
-        dimsEl.textContent = d.width + ' \u00d7 ' + d.height + 'px — ratio ' + d.ratio;
-        // warn if declared ratio looks off
-        var parts = declared.split('/');
-        if (parts.length === 2) {
-          var declaredRatio = (parseFloat(parts[0]) / parseFloat(parts[1])).toFixed(4);
-          if (Math.abs(parseFloat(d.ratio) - parseFloat(declaredRatio)) > 0.05) {
-            dimsEl.textContent += ' \u26a0 declared ' + declared + ' may not match';
-            dimsEl.style.color = '#c0392b';
-          }
-        }
-      } else { dimsEl.textContent = ''; }
-    })
-    .catch(function() { dimsEl.textContent = ''; });
-
-  // header row
-  var topRow = document.createElement('div');
-  topRow.style.cssText = 'display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;';
-  var lbl = document.createElement('p'); lbl.className = 'section-label'; lbl.style.marginBottom = '0'; lbl.textContent = 'Edit photo';
-  var deleteBtn = document.createElement('button'); deleteBtn.className = 'delete-btn'; deleteBtn.textContent = 'Delete';
-  var deleteUndo = null; // for undo
-  deleteBtn.addEventListener('click', function() {
-    if (deleteBtn.dataset.confirm === 'true') {
-      doDeletePhoto(photo.slug, photo.src);
-    } else {
-      deleteBtn.textContent = 'Sure? This is permanent';
-      deleteBtn.dataset.confirm = 'true'; deleteBtn.classList.add('confirming');
-      setTimeout(function() {
-        if (deleteBtn.dataset.confirm === 'true') { deleteBtn.textContent = 'Delete'; deleteBtn.dataset.confirm = ''; deleteBtn.classList.remove('confirming'); }
-      }, 4000);
-    }
-  });
-  topRow.appendChild(lbl); topRow.appendChild(deleteBtn); photosEditPanel.appendChild(topRow);
-
-  function makeField(labelText, value, type, options) {
-    var wrap = document.createElement('div'); wrap.className = 'field';
-    var l = document.createElement('label'); l.textContent = labelText; wrap.appendChild(l);
-    var input;
-    if (type === 'select') {
-      input = document.createElement('select');
-      options.forEach(function(opt) { var o = document.createElement('option'); o.value = opt; o.textContent = opt; if (opt === value) o.selected = true; input.appendChild(o); });
-    } else {
-      input = document.createElement('input'); input.type = type || 'text'; input.value = value || '';
-    }
-    input.addEventListener('input', markDirty);
-    input.addEventListener('change', markDirty);
-    wrap.appendChild(input); return { wrap: wrap, input: input };
-  }
-
-  var fTitle = makeField('Title', photo.title, 'text');
-  var fAlt = makeField('Alt text', photo.alt, 'text');
-  var fSeries = makeField('Series', photo.series, 'select', seriesList);
-  var fRatio = makeField('Aspect ratio', photo.aspectRatio, 'text');
-  var fYear = makeField('Year', photo.year, 'number');
-  [fTitle, fAlt, fSeries, fRatio, fYear].forEach(function(f) { photosEditPanel.appendChild(f.wrap); });
-
-  var rule = document.createElement('div'); rule.className = 'rule'; photosEditPanel.appendChild(rule);
-  var checks = document.createElement('div'); checks.className = 'checks';
-
-  function makeCheck(labelText, checked, field) {
-    var lbl2 = document.createElement('label'); lbl2.className = 'check-item';
-    var inp = document.createElement('input'); inp.type = 'checkbox'; inp.checked = checked;
-    var box = document.createElement('span'); box.className = 'check-box';
-    var txt = document.createElement('span'); txt.className = 'check-label'; txt.textContent = labelText;
-    lbl2.appendChild(inp); lbl2.appendChild(box); lbl2.appendChild(txt);
-    inp.addEventListener('change', async function() {
-      try {
-        var res = await fetch('http://localhost:3001/api/photos/' + encodeURIComponent(photo.slug), {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ field: field, value: inp.checked }),
-        });
-        var data = await res.json(); if (!res.ok) throw new Error(data.error);
-        var p = allPhotos.find(function(x) { return x.slug === photo.slug; }); if (p) p[field] = inp.checked;
-        if (field === 'print') {
-          if (inp.checked) {
-            await fetch('http://localhost:3001/api/prints/' + encodeURIComponent(photo.slug), {
-              method: 'PUT', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ slug: photo.slug, visible: false, priceLine: '', medium: '', paper: '', finish: '', notes: '', sizes: [] }),
-            });
-          } else {
-            await fetch('http://localhost:3001/api/prints/' + encodeURIComponent(photo.slug), { method: 'DELETE' });
-          }
-        }
-        showToast(labelText + ' ' + (inp.checked ? 'on' : 'off'), false); renderPhotosList();
-      } catch(e) { inp.checked = !inp.checked; showToast('Error: ' + e.message, true); }
-    });
-    return lbl2;
-  }
-
-  checks.appendChild(makeCheck('Cover', photo.cover, 'cover'));
-  checks.appendChild(makeCheck('Featured', photo.featured, 'featured'));
-  checks.appendChild(makeCheck('Hidden', photo.hidden, 'hidden'));
-  checks.appendChild(makeCheck('Print', photo.print, 'print'));
-  photosEditPanel.appendChild(checks);
-
-  // bulk actions row
-  var bulkRow = document.createElement('div');
-  bulkRow.style.cssText = 'display:flex;gap:16px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);flex-wrap:wrap;';
-  var bulkLabel = document.createElement('span');
-  bulkLabel.style.cssText = 'font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);align-self:center;flex-shrink:0;';
-  bulkLabel.textContent = 'Series:';
-
-  function makeBulkBtn(label, action) {
-    var btn = document.createElement('button'); btn.className = 'action-btn';
-    btn.style.fontSize = '10px';
-    btn.textContent = label;
-    btn.addEventListener('click', async function() {
-      var seriesName = photo.series;
-      var seriesPhotos = allPhotos.filter(function(p) { return p.series === seriesName; });
-      btn.textContent = 'Working...';
-      for (var i = 0; i < seriesPhotos.length; i++) {
-        var p = seriesPhotos[i];
-        await fetch('http://localhost:3001/api/photos/' + encodeURIComponent(p.slug), {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(action),
-        });
-        var local = allPhotos.find(function(x) { return x.slug === p.slug; });
-        if (local) local[action.field] = action.value;
-      }
-      showToast('Done \u2014 ' + seriesPhotos.length + ' photos updated', false);
-      btn.textContent = label;
-      renderPhotosList();
-    });
-    return btn;
-  }
-
-  bulkRow.appendChild(bulkLabel);
-  bulkRow.appendChild(makeBulkBtn('Hide all', { field: 'hidden', value: true }));
-  bulkRow.appendChild(makeBulkBtn('Show all', { field: 'hidden', value: false }));
-  bulkRow.appendChild(makeBulkBtn('Feature all', { field: 'featured', value: true }));
-  bulkRow.appendChild(makeBulkBtn('Unfeature all', { field: 'featured', value: false }));
-  photosEditPanel.appendChild(bulkRow);
-
-  var saveRow = document.createElement('div'); saveRow.className = 'submit-row';
-  var saveBtn = document.createElement('button'); saveBtn.className = 'submit-btn';
-  saveBtn.innerHTML = '<span class="line"></span><span>Save changes</span>';
-  saveBtn.addEventListener('click', async function() {
-    saveBtn.disabled = true; saveBtn.querySelector('span:last-child').textContent = 'Saving...';
-    try {
-      var res = await fetch('http://localhost:3001/api/photos/' + encodeURIComponent(photo.slug), {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: fTitle.input.value, alt: fAlt.input.value, series: fSeries.input.value, aspectRatio: fRatio.input.value, year: parseInt(fYear.input.value) }),
-      });
-      var data = await res.json(); if (!res.ok) throw new Error(data.error);
-      var p = allPhotos.find(function(x) { return x.slug === photo.slug; });
-      if (p) { p.title = fTitle.input.value; p.alt = fAlt.input.value; p.series = fSeries.input.value; p.aspectRatio = fRatio.input.value; p.year = parseInt(fYear.input.value); }
-      markClean();
-      showToast('Saved', false); renderPhotosList();
-    } catch(e) { showToast('Error: ' + e.message, true); }
-    saveBtn.disabled = false; saveBtn.querySelector('span:last-child').textContent = 'Save changes';
-  });
-  saveRow.appendChild(saveBtn); photosEditPanel.appendChild(saveRow);
-}
-
-async function doDeletePhoto(slug, src) {
-  // Soft-delete: stash data for undo before calling API
-  var photoData = allPhotos.find(function(p) { return p.slug === slug; });
-  try {
-    var res = await fetch('http://localhost:3001/api/photos/' + encodeURIComponent(slug), { method: 'DELETE' });
-    var data = await res.json(); if (!res.ok) throw new Error(data.error);
-    markClean();
-    allPhotos = allPhotos.filter(function(p) { return p.slug !== slug; });
-    selectedSlug = null;
-    photosEditPanel.innerHTML = '<div class="edit-empty">Select a photo to edit</div>';
-    renderPhotosList();
-    showToast('Deleted — image file removed from disk', false);
-  } catch(e) { showToast('Error: ' + e.message, true); }
-}
-
-// ── Image lightbox (for thumbnail click) ─────────────────────────────────────
-function openImageLightbox(src, title) {
-  var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
-  var img = document.createElement('img');
-  img.src = src;
-  img.style.cssText = 'max-width:90vw;max-height:90vh;object-fit:contain;display:block;';
-  overlay.appendChild(img);
-  if (title) {
-    var cap = document.createElement('p');
-    cap.style.cssText = 'position:absolute;bottom:24px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.6);font-size:12px;letter-spacing:.18em;text-transform:uppercase;';
-    cap.textContent = title; overlay.appendChild(cap);
-  }
-  overlay.addEventListener('click', function() { document.body.removeChild(overlay); });
-  document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { if (document.body.contains(overlay)) document.body.removeChild(overlay); document.removeEventListener('keydown', esc); } });
-  document.body.appendChild(overlay);
-}
-
-// ── Order view ────────────────────────────────────────────────────────────────
-var orderList = document.getElementById('orderList');
-var orderSeriesLabel = document.getElementById('orderSeriesLabel');
-var orderPhotos = [];
-var orderDragSrc = null;
-
-function renderOrderView() {
-  var series = photosSeriesFilter.value;
-  if (!series) {
-    orderList.innerHTML = '<div style="padding:24px 28px;font-size:12px;color:#ccc;letter-spacing:.1em;text-transform:uppercase;">Select a series in the filter above</div>';
-    orderSeriesLabel.textContent = 'Select a series to reorder';
-    return;
-  }
-  orderSeriesLabel.textContent = series + ' \u2014 gallery order';
-  fetch('http://localhost:3001/api/series-order/' + encodeURIComponent(series))
-    .then(function(r) { return r.json(); })
-    .then(function(data) { orderPhotos = data.photos; renderOrderList(); });
-}
-
-function renderOrderList() {
-  orderList.innerHTML = '';
-  orderPhotos.forEach(function(photo, idx) {
-    var item = document.createElement('div');
-    item.className = 'order-item'; item.draggable = true; item.dataset.slug = photo.slug;
-    var num = document.createElement('span'); num.className = 'order-num'; num.textContent = idx + 1;
-    var thumb = document.createElement('img'); thumb.className = 'order-thumb';
-    thumb.src = imgSrc(photo.src); thumb.onerror = function() { thumb.style.background = '#eee'; };
-    var info = document.createElement('div'); info.className = 'order-info';
-    var t = document.createElement('div'); t.className = 'order-title'; t.textContent = photo.title || photo.slug;
-    var m = document.createElement('div'); m.className = 'order-meta'; m.textContent = photo.year || '';
-    if (photo.hidden) m.textContent += ' \u00b7 hidden';
-    info.appendChild(t); info.appendChild(m);
-    var handle = document.createElement('span'); handle.className = 'drag-handle'; handle.textContent = '\u2837';
-    item.appendChild(num); item.appendChild(thumb); item.appendChild(info); item.appendChild(handle);
-    item.addEventListener('dragstart', function(e) { orderDragSrc = item; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-    item.addEventListener('dragend', function() { item.classList.remove('dragging'); document.querySelectorAll('.order-item').forEach(function(el) { el.classList.remove('drag-over'); }); });
-    item.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; document.querySelectorAll('.order-item').forEach(function(el) { el.classList.remove('drag-over'); }); if (item !== orderDragSrc) item.classList.add('drag-over'); });
-    item.addEventListener('drop', function(e) {
-      e.preventDefault(); if (!orderDragSrc || orderDragSrc === item) return;
-      var fi = orderPhotos.findIndex(function(p) { return p.slug === orderDragSrc.dataset.slug; });
-      var ti = orderPhotos.findIndex(function(p) { return p.slug === item.dataset.slug; });
-      var moved = orderPhotos.splice(fi, 1)[0]; orderPhotos.splice(ti, 0, moved); renderOrderList();
-    });
-    orderList.appendChild(item);
   });
 }
 
@@ -1090,7 +856,7 @@ document.getElementById('saveOrderBtn').addEventListener('click', async function
   try {
     var res = await fetch('http://localhost:3001/api/series-order/' + encodeURIComponent(series), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order: orderPhotos.map(function(p) { return p.slug; }) }),
+      body: JSON.stringify({ order: orderedSlugs }),
     });
     var data = await res.json(); if (!res.ok) throw new Error(data.error);
     showToast('Order saved', false);
