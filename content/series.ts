@@ -99,8 +99,9 @@ export const seriesOrder: Record<string, string[]> = {
     'ponder-2025',
     'fading-2026',
     'now-is-now-2025',
-    'peaking-into-their-future-2025',
-    'reflections-2026',
     'analog-slog-2025',
+    'reflections-2026',
+    'peaking-into-their-future-2025',
+    'fated-2025',
   ],
 }
